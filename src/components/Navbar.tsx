@@ -1,6 +1,6 @@
 import {
   ChevronDown,
-  List,
+  // List,
   MapPin,
   Search,
   ShoppingCart,
@@ -32,7 +32,7 @@ export function Navbar() {
   const placeholder = isFocused ? "Nhập sản phẩm cần tìm" : hints[idx];
 
   return (
-    <header className="sticky md:h-24 top-0 z-50 w-full bg-green-700 xl:px-42">
+    <header className="sticky md:h-16 top-0 z-50 w-full bg-green-700 xl:px-42">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="flex gap-4">
           <div className="flex flex-col gap-3">
@@ -40,17 +40,22 @@ export function Navbar() {
               <img
                 src="https://media.istockphoto.com/id/2222830929/vi/anh/imge-c%E1%BB%A7a-nh%E1%BB%AFng-qu%E1%BA%A3-anh-%C4%91%C3%A0o-%C4%91%E1%BB%8F-t%C6%B0%C6%A1i-v%E1%BB%9Bi-th%C3%A2n-tr%C3%AAn-n%E1%BB%81n-%C4%91en-tr%C6%B0ng-b%C3%A0y-tr%C3%A1i-c%C3%A2y-m%C3%B9a-h%C3%A8-ngon-ng%E1%BB%8Dt.jpg?s=1024x1024&w=is&k=20&c=mDQ4JJkQ_20VVdKyoAYxLJWZJWjZcldWrpjCP2DpOXU="
                 alt=""
-                className="w-8 h-8 rounded-2xl object-cover"
+                className="w-10 h-10 rounded-2xl object-cover"
               />
-              <span className="text-amber-300 font-medium">
-                Bách hóa không xanh
-              </span>
+              <div className="flex flex-col justify-center">
+                <span className="text-amber-300 font-medium">
+                  Bách hóa không xanh
+                </span>
+                <p className="text-xs text-white opacity-90">
+                  Tươi ngon mỗi ngày
+                </p>
+              </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-2 rounded-t-md bg-green-800 px-3 py-2 text-white shrink-0">
+            {/* <div className="hidden md:flex items-center gap-2 rounded-t-md bg-green-800 px-3 py-2 text-white shrink-0">
               <List className="w-5 h-5" />
               <span className="whitespace-nowrap">Danh mục sản phẩm</span>
-            </div>
+            </div> */}
           </div>
 
           {/* Search bar */}
@@ -79,7 +84,7 @@ export function Navbar() {
           </div>
 
           {/* Right: chỗ trống cho action/user */}
-          <div className="flex flex-col gap-2 items-end justify-end">
+          <div className="flex gap-2 items-end justify-end">
             <div className="hidden md:flex text-white border-amber-50  h-[36px] w-fit min-w-[200px]  max-w-[250px] bg-[#FFFFFF]/[0.15] py-3px pl-6px pr-[8px] rounded-3xl items-center justify-center overflow-hidden text-nowrap px-2 cursor-pointer">
               <div className="flex gap-1 items-center min-w-0 text-sm">
                 <MapPin className="h-4 w-4 shrink-0" />
@@ -90,11 +95,13 @@ export function Navbar() {
               </div>
               <ChevronDown className="ml-2 shrink-0 h-4 w-4 " />
             </div>
-
-            <div className="hidden md:flex items-center gap-2 rounded-t-md bg-green-800 px-3 py-2 text-white shrink-0">
+            <div className="hidden md:flex items-center gap-2 rounded-full bg-green-800 px-2 py-2 text-white shrink-0">
+              <User className="w-5 h-5" />
+            </div>
+            {/* <div className="hidden md:flex items-center gap-2 rounded-t-md bg-green-800 px-3 py-2 text-white shrink-0">
               <User className="w-5 h-5" />
               <span className="whitespace-nowrap">Tài khoản của Bạn</span>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
