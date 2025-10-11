@@ -5,9 +5,12 @@ import {
   Search,
   ShoppingCart,
   User,
+  Menu,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { CategorySidebar } from "./CategorySideBar";
 export function Navbar() {
   const hints = useMemo(
     () => [
@@ -22,6 +25,7 @@ export function Navbar() {
   const [idx, setIdx] = useState<number>(0);
   const [isFocused, setIsFocused] = useState<boolean>(false);
   const [value, setValue] = useState<string>("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (isFocused || value) return;
@@ -32,9 +36,26 @@ export function Navbar() {
   const placeholder = isFocused ? "Nhập sản phẩm cần tìm" : hints[idx];
 
   return (
-    <header className="sticky md:h-16 top-0 z-50 w-full bg-green-700 xl:px-42">
+    <header className="sticky md:h-16 top-0 z-50 w-full bg-[#007E42]">
       <div className="mx-auto max-w-7xl px-4 py-3">
         <div className="flex gap-4">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden flex-shrink-0"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-64">
+              <CategorySidebar
+                isMobile
+                onClose={() => setMobileMenuOpen(false)}
+              />
+            </SheetContent>
+          </Sheet>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <img
@@ -42,7 +63,7 @@ export function Navbar() {
                 alt=""
                 className="w-10 h-10 rounded-2xl object-cover"
               />
-              <div className="flex flex-col justify-center">
+              <div className="hidden lg:flex flex-col justify-center">
                 <span className="text-amber-300 font-medium">
                   Bách hóa không xanh
                 </span>
@@ -51,15 +72,10 @@ export function Navbar() {
                 </p>
               </div>
             </div>
-
-            {/* <div className="hidden md:flex items-center gap-2 rounded-t-md bg-green-800 px-3 py-2 text-white shrink-0">
-              <List className="w-5 h-5" />
-              <span className="whitespace-nowrap">Danh mục sản phẩm</span>
-            </div> */}
           </div>
 
           {/* Search bar */}
-          <div className="hidden sm:block flex-1">
+          <div className="flex-1 lg:ml-12">
             <div className="relative ">
               <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
@@ -98,10 +114,6 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-2 rounded-full bg-green-800 px-2 py-2 text-white shrink-0">
               <User className="w-5 h-5" />
             </div>
-            {/* <div className="hidden md:flex items-center gap-2 rounded-t-md bg-green-800 px-3 py-2 text-white shrink-0">
-              <User className="w-5 h-5" />
-              <span className="whitespace-nowrap">Tài khoản của Bạn</span>
-            </div> */}
           </div>
         </div>
       </div>
