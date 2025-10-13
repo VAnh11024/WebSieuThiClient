@@ -78,6 +78,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: true,
       slug: "gau-do-mi-an-lien",
+      quantity: "1 gói",
     },
     {
       id: 2,
@@ -91,6 +92,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "hao-hao-mi-tom",
+      quantity: "1 gói",
     },
     {
       id: 3,
@@ -104,6 +106,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: true,
       slug: "kokomi-mi-lau",
+      quantity: "1 gói",
     },
     {
       id: 4,
@@ -117,6 +120,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "omachi-mi-tom",
+      quantity: "1 gói",
     },
     {
       id: 5,
@@ -130,6 +134,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "acecook-mi-goi",
+      quantity: "1 gói",
     },
     {
       id: 6,
@@ -143,6 +148,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "miliket-mi-tom",
+      quantity: "1 gói",
     },
     {
       id: 7,
@@ -156,6 +162,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 11,
       is_hot: true,
       slug: "sakura-mi-lau",
+      quantity: "1 gói",
     },
     {
       id: 8,
@@ -169,6 +176,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 8,
       is_hot: false,
       slug: "vifon-mi-tom",
+      quantity: "1 gói",
     },
     {
       id: 9,
@@ -182,6 +190,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "khong-guan-mi-an-lien",
+      quantity: "1 gói",
     },
     {
       id: 10,
@@ -195,6 +204,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: true,
       slug: "sapporo-mi-nhat",
+      quantity: "1 gói",
     },
     {
       id: 11,
@@ -208,6 +218,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "maruchan-mi-han",
+      quantity: "1 gói",
     },
     {
       id: 12,
@@ -221,6 +232,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: true,
       slug: "nissin-mi-nhat",
+      quantity: "1 gói",
     },
   ],
   "dau-an": [
@@ -236,6 +248,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 12,
       is_hot: true,
       slug: "dau-an-neptune",
+      quantity: "1 chai 1L",
     },
     {
       id: 14,
@@ -249,6 +262,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 11,
       is_hot: false,
       slug: "dau-an-simply",
+      quantity: "1 chai 1L",
     },
     {
       id: 15,
@@ -262,6 +276,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "dau-an-tuong-an",
+      quantity: "1 chai 1L",
     },
   ],
   "thit-heo": [
@@ -277,6 +292,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 8,
       is_hot: true,
       slug: "thit-heo-ba-chi",
+      quantity: "500g",
     },
     {
       id: 17,
@@ -290,6 +306,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 7,
       is_hot: false,
       slug: "thit-heo-nac",
+      quantity: "500g",
     },
     {
       id: 18,
@@ -303,6 +320,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 7,
       is_hot: false,
       slug: "thit-heo-suon",
+      quantity: "500g",
     },
   ],
   "rau-la": [
@@ -318,6 +336,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 20,
       is_hot: false,
       slug: "rau-muong",
+      quantity: "1 bó",
     },
     {
       id: 20,
@@ -331,6 +350,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 17,
       is_hot: false,
       slug: "rau-cai",
+      quantity: "1 bó",
     },
     {
       id: 21,
@@ -344,6 +364,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "rau-xa-lach",
+      quantity: "1 bó",
     },
   ],
 };

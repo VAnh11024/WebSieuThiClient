@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { CategorySidebar } from "./CategorySideBar";
+
 export function Navbar() {
   const hints = useMemo(
     () => [
@@ -73,8 +74,8 @@ export function Navbar() {
           </a>
 
           {/* Search bar */}
-          <div className="flex-1 lg:ml-12">
-            <div className="relative ">
+          <div className="flex-1 lg:ml-2">
+            <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
               <input
                 id="search"
@@ -84,16 +85,21 @@ export function Navbar() {
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 placeholder={placeholder}
-                className="w-full h-12 pl-12 pr-16 rounded-full bg-white text-gray-900 placeholder:text-gray-400 outline-none shadow-sm border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-100 transition-all duration-200"
+                className="w-full h-12 pl-12 pr-4 rounded-full bg-white text-gray-900 placeholder:text-gray-400 outline-none shadow-sm border border-gray-200 focus:border-green-400 focus:ring-2 focus:ring-green-100 transition-all duration-200"
               />
-              <div className="cursor-pointer p-2 absolute right-2 top-1/2 -translate-y-1/2 text-green-800 hover:bg-green-50 rounded-full transition-colors duration-200">
-                <ShoppingCart className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 size-5 border-2 border-white">
-                  <span className="text-white text-xs font-bold">0</span>
-                </span>
-              </div>
             </div>
           </div>
+
+          {/* Shopping cart */}
+          <a 
+            href="/cart"
+            className="relative cursor-pointer p-2 text-white hover:bg-white/10 rounded-full transition-colors duration-200 flex-shrink-0"
+          >
+            <ShoppingCart className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 w-5 h-5 border-2 border-white min-w-[20px]">
+              <span className="text-white text-xs font-bold leading-none">0</span>
+            </span>
+          </a>
 
           {/* Right: chỗ trống cho action/user */}
           <div className="flex gap-3 items-center justify-end">
