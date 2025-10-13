@@ -85,3 +85,26 @@ export const contacts = [
   { title: "Email", value: "hotro@bachhoaxanh.com", Icon: Mail },
   { title: "Địa chỉ", value: "123 Đường ABC, Quận 1, TP.HCM", Icon: MapPin },
 ] as const satisfies ReadonlyArray<ContactItem>;
+
+// Filter options cho FilterBar - được quản lý tập trung
+export const SORT_OPTIONS = [
+  { value: "default", label: "Mặc định" },
+  { value: "price-asc", label: "Giá tăng dần" },
+  { value: "price-desc", label: "Giá giảm dần" },
+  { value: "name-asc", label: "Tên A-Z" },
+  { value: "name-desc", label: "Tên Z-A" },
+  { value: "newest", label: "Mới nhất" },
+  { value: "best-selling", label: "Bán chạy" },
+] as const;
+
+export const BRAND_OPTIONS = [
+  { value: "all", label: "Tất cả thương hiệu" },
+  { value: "hao-hao", label: "Hảo Hảo" },
+  { value: "3-mien", label: "3 Miền" },
+  { value: "gau-do", label: "Gấu Đỏ" },
+  { value: "omachi", label: "Omachi" },
+  { value: "de-nhat", label: "ĐỆ NHẤT" },
+  { value: "acecook", label: "Acecook" },
+  { value: "miliket", label: "Miliket" },
+  { value: "vifon", label: "Vifon" },
+] as const;

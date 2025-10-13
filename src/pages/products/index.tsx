@@ -1,8 +1,12 @@
 import { CategoryNav } from "@/components/CategoryNav";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import type { CategoryNav as Category, Product } from "@/types";
-import { ProductCard } from "@/components/products/ProductCard";
+import type { CategoryNav as Category, Product, Banner } from "@/types";
+import Banners from "@/components/productPage/Banners";
+import Article from "@/components/productPage/Article";
+import ProductGridWithBanners from "@/components/productPage/ProductGridWithBanners";
+import type { Article as ArticleType } from "@/types/article.type";
+import FilterBar from "@/components/productPage/FilterBar";
 
 const sampleCategories: Category[] = [
   {
@@ -78,7 +82,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: true,
       slug: "gau-do-mi-an-lien",
-      quantity: "1 gói",
     },
     {
       id: 2,
@@ -92,7 +95,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "hao-hao-mi-tom",
-      quantity: "1 gói",
     },
     {
       id: 3,
@@ -106,7 +108,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: true,
       slug: "kokomi-mi-lau",
-      quantity: "1 gói",
     },
     {
       id: 4,
@@ -120,7 +121,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "omachi-mi-tom",
-      quantity: "1 gói",
     },
     {
       id: 5,
@@ -134,7 +134,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "acecook-mi-goi",
-      quantity: "1 gói",
     },
     {
       id: 6,
@@ -148,7 +147,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "miliket-mi-tom",
-      quantity: "1 gói",
     },
     {
       id: 7,
@@ -162,7 +160,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 11,
       is_hot: true,
       slug: "sakura-mi-lau",
-      quantity: "1 gói",
     },
     {
       id: 8,
@@ -176,7 +173,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 8,
       is_hot: false,
       slug: "vifon-mi-tom",
-      quantity: "1 gói",
     },
     {
       id: 9,
@@ -190,7 +186,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "khong-guan-mi-an-lien",
-      quantity: "1 gói",
     },
     {
       id: 10,
@@ -204,7 +199,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: true,
       slug: "sapporo-mi-nhat",
-      quantity: "1 gói",
     },
     {
       id: 11,
@@ -218,7 +212,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "maruchan-mi-han",
-      quantity: "1 gói",
     },
     {
       id: 12,
@@ -232,7 +225,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: true,
       slug: "nissin-mi-nhat",
-      quantity: "1 gói",
     },
   ],
   "dau-an": [
@@ -248,7 +240,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 12,
       is_hot: true,
       slug: "dau-an-neptune",
-      quantity: "1 chai 1L",
     },
     {
       id: 14,
@@ -262,7 +253,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 11,
       is_hot: false,
       slug: "dau-an-simply",
-      quantity: "1 chai 1L",
     },
     {
       id: 15,
@@ -276,7 +266,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "dau-an-tuong-an",
-      quantity: "1 chai 1L",
     },
   ],
   "thit-heo": [
@@ -292,7 +281,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 8,
       is_hot: true,
       slug: "thit-heo-ba-chi",
-      quantity: "500g",
     },
     {
       id: 17,
@@ -306,7 +294,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 7,
       is_hot: false,
       slug: "thit-heo-nac",
-      quantity: "500g",
     },
     {
       id: 18,
@@ -320,7 +307,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 7,
       is_hot: false,
       slug: "thit-heo-suon",
-      quantity: "500g",
     },
   ],
   "rau-la": [
@@ -336,7 +322,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 20,
       is_hot: false,
       slug: "rau-muong",
-      quantity: "1 bó",
     },
     {
       id: 20,
@@ -350,7 +335,6 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 17,
       is_hot: false,
       slug: "rau-cai",
-      quantity: "1 bó",
     },
     {
       id: 21,
@@ -364,10 +348,42 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "rau-xa-lach",
-      quantity: "1 bó",
     },
   ],
 };
+
+const sampleBanners: Banner[] = [
+  {
+    id: 1,
+    name: "Banner 1",
+    image_url:
+      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc_202510091649049889.jpg",
+    link_url: "/ ",
+  },
+  {
+    id: 2,
+    name: "Banner 2",
+    image_url:
+      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc-1_202508190846166252.jpg",
+    link_url: "/ ",
+  },
+  {
+    id: 3,
+    name: "Banner 2",
+    image_url:
+      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/trang-cate-pc202507042338493733_202508121546495641.jpg",
+    link_url: "/ ",
+  },
+];
+
+const sampleArticles: ArticleType[] = [
+  {
+    id: 1,
+    title: "Thịt heo là gì?",
+    content:
+      "Thịt heo là loại thực phẩm phổ biến nhất tại Việt Nam, là loại nguyên liệu quen thuộc trong những bữa ăn hằng ngày. Bởi lẽ, giá thịt heo không chỉ phù hợp với điều kiện kinh tế của người Việt mà còn dễ dàng chế biến ra nhiều món ăn nhanh mà lại không tốn quá nhiều thời gian.\n\nThịt heo tươi chứa rất nhiều chất dinh dưỡng cung cấp cho cơ thể con người. Thông thường, phần thịt mà được ưa chuộng nhất chính là ba rọi và sườn heo. Các phần thịt này có độ mềm dai vừa phải, phần mỡ nạc xen kẽ tạo nên độ thơm ngon cho món ăn.\n\nThịt heo còn chứa nhiều protein, vitamin B12, sắt và kẽm. Đây là những chất dinh dưỡng quan trọng cho sự phát triển của cơ thể và hệ thần kinh.\n\nThành phần dinh dưỡng của thịt heo bao gồm protein, chất béo, vitamin và khoáng chất cần thiết cho cơ thể.",
+  },
+];
 
 export default function ProductsPage() {
   const [searchParams] = useSearchParams();
@@ -432,24 +448,23 @@ export default function ProductsPage() {
         selectedCategoryId={selectedCategoryId}
         onCategorySelect={handleCategorySelect}
       />
-      <div className="mt-5"></div>
+      <div className="mt-5">
+        <FilterBar />
+      </div>
+      <div className="mt-5">
+        <Banners banners={sampleBanners} />
+      </div>
 
-      {/* Hiển thị sản phẩm theo category */}
+      {/* Hiển thị sản phẩm với banner xen kẽ */}
       <div className="mt-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-center">
-          {products.length === 0 ? (
-            <p className="col-span-full text-center text-gray-500 py-8">
-              Chưa có sản phẩm nào trong danh mục này
-            </p>
-          ) : (
-            products.map((product: Product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={handleAddToCart}
-              />
-            ))
-          )}
+        <ProductGridWithBanners
+          products={products}
+          banners={sampleBanners}
+          onAddToCart={handleAddToCart}
+          rowsPerBanner={2}
+        />
+        <div className="mt-8">
+          <Article article={sampleArticles[0]} variant="compact" />
         </div>
       </div>
     </div>

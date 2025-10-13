@@ -3,3 +3,5 @@ export * from "./product.type";
 export * from "./category.type";
 export * from "./component.type";
 export * from "./constants.type";
+export * from "./banner.type";
+export * from "./article.type";
