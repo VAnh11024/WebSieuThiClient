@@ -2,6 +2,7 @@ import MainLayout from "@/layouts/MainLayout";
 import { createBrowserRouter, type RouteObject } from "react-router-dom";
 import HomePage from "@/pages/home/index";
 import ProductsPage from "@/pages/products";
+import ShoppingCart from "@/pages/cart";
 
 const router: RouteObject[] = [
   {
@@ -15,6 +16,10 @@ const router: RouteObject[] = [
       {
         path: "/products",
         element: <ProductsPage />,
+      },
+      {
+        path: "/cart",
+        element: <ShoppingCart />,
       },
     ],
   },

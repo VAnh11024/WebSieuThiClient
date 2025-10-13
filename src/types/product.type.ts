@@ -10,6 +10,7 @@ export interface Product {
   product_suggestion_id?: number;
   image_url: string;
   slug: string;
+  quantity?: string; // Số lượng/số gam (ví dụ: "500g", "1kg", "2 chai", "1 hộp")
 }
 
 export interface ProductCardProps {

@@ -1,14 +1,19 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Flame } from "lucide-react";
-import type { ProductCardProps } from "@/types";
+import { ProductModal } from "../products/ProductModal";
+import type { ProductCardProps, Product } from "@/types";
+
 
 export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const hasDiscount = product.discount_percent > 0;
   const isOutOfStock = product.stock_quantity === 0;
+
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -17,82 +22,126 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     }).format(price);
   };
 
+
+  const handleAddToCart = (product: Product, quantity: number) => {
+    // Tạo một sản phẩm với số lượng đã chọn
+    const productWithQuantity = { ...product, selectedQuantity: quantity };
+    onAddToCart?.(productWithQuantity);
+  };
+
+
+
+
   return (
-    <Card className="group relative overflow-hidden border border-border bg-card transition-all hover:shadow-lg">
-      {/* Badges Container */}
-      <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
-        {product.is_hot && (
-          <Badge className="bg-accent text-accent-foreground shadow-md">
-            <Flame className="mr-1 h-3 w-3" />
-            Hot
-          </Badge>
-        )}
-      </div>
-
-      {/* Discount Badge */}
-      {hasDiscount && (
-        <div className="absolute right-2 top-2 z-10">
-          <div className="rounded-lg bg-accent px-2 py-1 text-xs font-bold text-accent-foreground shadow-md">
-            -{product.discount_percent}%
-          </div>
+    <div className="group relative flex h-full min-h-[350px] flex-col overflow-hidden rounded-lg bg-white transition-all hover:shadow-lg">
+      {/* White Content Area */}
+      <div className="flex h-full flex-col rounded-lg bg-white">
+        {/* Badges Container */}
+        <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+          {product.is_hot && (
+            <Badge className="bg-red-500 text-white shadow-md">
+              <Flame className="mr-1 h-3 w-3" />
+              Hot
+            </Badge>
+          )}
         </div>
-      )}
 
-      {/* Product Image */}
-      <div className="relative aspect-square overflow-hidden bg-secondary">
-        <img
-          src={product.image_url || "/placeholder.svg"}
-          alt={product.name}
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        {isOutOfStock && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <span className="rounded-md bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground">
-              Hết hàng
-            </span>
-          </div>
-        )}
-      </div>
 
-      {/* Product Info */}
-      <div className="p-3">
-        {/* Product Name */}
-        <h3 className="mb-2 line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight text-card-foreground">
-          {product.name}
-        </h3>
-
-        {/* Price Section */}
-        <div className="mb-3 flex flex-col gap-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-accent">
-              {formatPrice(product.final_price)}
-            </span>
-            {hasDiscount && (
-              <span className="text-xs text-muted-foreground line-through">
-                {formatPrice(product.unit_price)}
+        {/* Product Image */}
+        <div
+          className="relative aspect-[4/3] overflow-hidden rounded-t-lg cursor-pointer"
+          onClick={() => {
+            // Add your click handler here - could be navigation to product detail page
+            console.log('Product image clicked:', product.name);
+          }}
+        >
+          <img
+            src={product.image_url || "/placeholder.svg"}
+            alt={product.name}
+            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+          />
+          {isOutOfStock && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+              <span className="rounded-md bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground">
+                Hết hàng
               </span>
+            </div>
+          )}
+        </div>
+
+
+        {/* Product Info */}
+        <div className="flex flex-1 flex-col p-4">
+          {/* Product Name */}
+          <h3 className="mb-1 text-base font-bold leading-tight text-gray-700 sm:text-lg line-clamp-2 min-h-[2.5rem]">
+            {product.name}
+          </h3>
+
+
+          {/* Price Section */}
+          <div className="mb-2 flex flex-col gap-1">
+            {/* Current Price with Unit */}
+            <span className="text-lg font-bold text-red-600 sm:text-xl">
+              {formatPrice(product.final_price)}
+              {product.quantity && (
+                <span className="text-sm font-normal text-red-600">
+                  /{product.quantity}
+                </span>
+              )}
+            </span>
+           
+            {/* Original Price and Discount */}
+            {hasDiscount && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">
+                  <span className="line-through">{formatPrice(product.unit_price)}</span>
+                  {product.quantity && (
+                    <span className="text-xs text-gray-400">
+                      /{product.quantity}
+                    </span>
+                  )}
+                </span>
+                <div className="rounded bg-red-600 px-2 py-1 text-xs font-bold text-white">
+                  -{product.discount_percent}%
+                </div>
+              </div>
             )}
           </div>
+
+
+          {/* Spacer to push button to bottom */}
+          <div className="flex-1"></div>
+
+
+          {/* Stock Status */}
+          {!isOutOfStock && product.stock_quantity < 10 && (
+            <p className="mb-2 text-xs text-destructive sm:text-sm">
+              Chỉ còn {product.stock_quantity} sản phẩm
+            </p>
+          )}
+
+
+          {/* Add to Cart Button */}
+          <Button
+            className="w-full bg-green-600 text-white hover:bg-green-700"
+            size="sm"
+            disabled={isOutOfStock}
+            onClick={() => setIsModalOpen(true)}
+          >
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}
+          </Button>
         </div>
-
-        {/* Stock Status */}
-        {!isOutOfStock && product.stock_quantity < 10 && (
-          <p className="mb-2 text-xs text-destructive">
-            Chỉ còn {product.stock_quantity} sản phẩm
-          </p>
-        )}
-
-        {/* Add to Cart Button */}
-        <Button
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          size="sm"
-          disabled={isOutOfStock}
-          onClick={() => onAddToCart?.(product)}
-        >
-          <ShoppingCart className="mr-2 h-4 w-4" />
-          {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}
-        </Button>
       </div>
-    </Card>
+
+
+      {/* Product Modal */}
+      <ProductModal
+        product={product}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddToCart={handleAddToCart}
+      />
+    </div>
   );
 }
