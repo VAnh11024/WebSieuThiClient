@@ -90,12 +90,14 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
                 </span>
               )}
             </span>
-           
+
             {/* Original Price and Discount */}
             {hasDiscount && (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-400">
-                  <span className="line-through">{formatPrice(product.unit_price)}</span>
+                  <span className="line-through">
+                    {formatPrice(product.unit_price)}
+                  </span>
                   {product.quantity && (
                     <span className="text-xs text-gray-400">
                       /{product.quantity}

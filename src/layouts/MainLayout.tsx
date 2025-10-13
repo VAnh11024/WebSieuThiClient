@@ -9,7 +9,7 @@ export default function MainLayout() {
       <Navbar />
       <div className="flex flex-row">
         <CategorySidebar />
-        <main className="flex flex-col w-full mx-auto sm:px-3 lg:ml-62 2xl:ml-95 2xl:mr-34 overflow-hidden gap-5 mt-2">
+        <main className="flex flex-col w-full mx-auto sm:px-3 lg:ml-62 2xl:ml-95 2xl:mr-31 overflow-hidden gap-5 mt-2">
           <Outlet />
           <Footer />
         </main>

@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { ChevronLeft } from "lucide-react"
-import type { Product } from "@/types"
-import { ProductModal } from "@/components/products/ProductModal"
-import Banners from "@/components/productPage/Banners"
-import type { Banner } from "@/types/banner.type"
-import ScrollButton from "@/components/ScrollButton"
-import { Link } from "react-router-dom"
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import type { Product } from "@/types";
+import { ProductModal } from "@/components/products/ProductModal";
+import Banners from "@/components/productPage/banner/Banners";
+import type { Banner } from "@/types/banner.type";
+import ScrollButton from "@/components/ScrollButton";
+import { Link } from "react-router-dom";
 
 // Sample product data
 const productData = {
@@ -28,14 +28,15 @@ const productData = {
   specifications: {
     "Loại sản phẩm": "Xúc xích xông khói",
     "Khối lượng": "450g",
-    "Thành phần": "Thịt lợn, gia vị, chất bảo quản, chất tạo màu, chất điều vị, muối, đường, tỏi, hành, ớt",
+    "Thành phần":
+      "Thịt lợn, gia vị, chất bảo quản, chất tạo màu, chất điều vị, muối, đường, tỏi, hành, ớt",
     "Hạn sử dụng": "Thịt ướp lạnh: Dưới 4°C, Thịt đông lạnh: Dưới -18°C",
     "Cách dùng": "Rã đông trước khi chế biến, nướng, luộc, chiên đều được",
     "Bảo quản": "Để ngăn mát tủ lạnh từ 0-4°C hoặc đông lạnh dưới -18°C",
     "Thương hiệu": "Ponnie (CLAS)",
     "Xuất xứ": "Việt Nam",
   },
-}
+};
 
 // Sample banners (dùng các link từ pages/products/index.tsx)
 const productBanners: Banner[] = [
@@ -60,52 +61,56 @@ const productBanners: Banner[] = [
       "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/trang-cate-pc202507042338493733_202508121546495641.jpg",
     link_url: "/ ",
   },
-]
+];
 
 export default function ProductDetail() {
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const thumbsRef = useRef<HTMLDivElement | null>(null)
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const thumbsRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-rotate main image every 3s
   useEffect(() => {
-    if (!productData.images || productData.images.length === 0) return
+    if (!productData.images || productData.images.length === 0) return;
     const intervalId = setInterval(() => {
-      setSelectedImage((prev) => (prev + 1) % productData.images.length)
-    }, 3000)
-    return () => clearInterval(intervalId)
-  }, [])
+      setSelectedImage((prev) => (prev + 1) % productData.images.length);
+    }, 3000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Keep active thumbnail in view (only scroll horizontally to avoid page jump)
   useEffect(() => {
-    const container = thumbsRef.current
-    if (!container) return
+    const container = thumbsRef.current;
+    if (!container) return;
     const activeThumb = container.querySelector(
       `[data-thumb-index="${selectedImage}"]`
-    ) as HTMLElement | null
-    if (!activeThumb) return
+    ) as HTMLElement | null;
+    if (!activeThumb) return;
     // Center the active thumbnail horizontally within the container
     const targetLeft =
-      activeThumb.offsetLeft - (container.clientWidth - activeThumb.clientWidth) / 2
-    container.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" })
-  }, [selectedImage])
+      activeThumb.offsetLeft -
+      (container.clientWidth - activeThumb.clientWidth) / 2;
+    container.scrollTo({ left: Math.max(0, targetLeft), behavior: "smooth" });
+  }, [selectedImage]);
 
   const goPrevImage = () => {
-    if (!productData.images.length) return
-    setSelectedImage((prev) => (prev - 1 + productData.images.length) % productData.images.length)
-  }
+    if (!productData.images.length) return;
+    setSelectedImage(
+      (prev) =>
+        (prev - 1 + productData.images.length) % productData.images.length
+    );
+  };
 
   const goNextImage = () => {
-    if (!productData.images.length) return
-    setSelectedImage((prev) => (prev + 1) % productData.images.length)
-  }
+    if (!productData.images.length) return;
+    setSelectedImage((prev) => (prev + 1) % productData.images.length);
+  };
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(price)
-  }
+    }).format(price);
+  };
 
   const toSlug = (text: string) =>
     text
@@ -115,7 +120,7 @@ export default function ProductDetail() {
       .replace(/[^a-z0-9\s-]/g, "")
       .trim()
       .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
+      .replace(/-+/g, "-");
 
   // Map dữ liệu mẫu sang kiểu Product cho ProductModal
   const productForModal: Product = {
@@ -130,22 +135,27 @@ export default function ProductDetail() {
     image_url: productData.images[0] ?? "",
     slug: toSlug(productData.name),
     quantity: "1 gói",
-  }
+  };
 
   const handleAddToCart = (product: Product, quantity: number) => {
     // TODO: Tích hợp giỏ hàng thật; tạm thời log để kiểm tra
-    console.log("Add to cart:", { product, quantity })
-  }
+    console.log("Add to cart:", { product, quantity });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Back button - match CartWithItems */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
-          <Link to="/" className="mr-4 hover:bg-gray-100 p-2 rounded-full transition-colors">
+          <Link
+            to="/"
+            className="mr-4 hover:bg-gray-100 p-2 rounded-full transition-colors"
+          >
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-xl font-semibold text-gray-800">Quay Về Trang Chủ</h1>
+          <h1 className="text-xl font-semibold text-gray-800">
+            Quay Về Trang Chủ
+          </h1>
         </div>
       </div>
 
@@ -167,14 +177,19 @@ export default function ProductDetail() {
 
             {/* Thumbnail Images */}
             <div className="relative">
-              <div ref={thumbsRef} className="flex gap-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar">
+              <div
+                ref={thumbsRef}
+                className="flex gap-2 overflow-x-auto overflow-y-hidden scroll-smooth no-scrollbar"
+              >
                 {productData.images.map((image, index) => (
                   <button
                     key={index}
                     data-thumb-index={index}
                     onClick={() => setSelectedImage(index)}
                     className={`flex-shrink-0 w-40 h-40 rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === index ? "border-green-500" : "border-gray-200 hover:border-gray-300"
+                      selectedImage === index
+                        ? "border-green-500"
+                        : "border-gray-200 hover:border-gray-300"
                     }`}
                   >
                     <img
@@ -195,21 +210,30 @@ export default function ProductDetail() {
           <div className="lg:sticky lg:top-4 lg:self-start">
             <div className="bg-white rounded-lg p-6 space-y-6">
               {/* Product Name */}
-              <h1 className="text-2xl font-semibold text-gray-900">{productData.name}</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">
+                {productData.name}
+              </h1>
 
               {/* Price */}
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-red-600">{formatPrice(productData.price)}</span>
+                <span className="text-3xl font-bold text-red-600">
+                  {formatPrice(productData.price)}
+                </span>
               </div>
 
               {/* Buy Button */}
-              <Button onClick={() => setIsModalOpen(true)} className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-lg font-semibold">
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-lg font-semibold"
+              >
                 MUA
               </Button>
 
               {/* Special Offers */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">🎁 ƯU ĐÃI ĐẶC BIỆT</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  🎁 ƯU ĐÃI ĐẶC BIỆT
+                </h3>
                 <ul className="space-y-1 text-sm text-gray-700">
                   <li>• Mua 2 tặng 1 tiền</li>
                   <li>• Giảm 10% cho đơn hàng từ 500.000₫</li>
@@ -224,7 +248,9 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">Giao hàng</p>
-                    <p className="text-sm text-gray-600">{productData.shipping.shippingFee}</p>
+                    <p className="text-sm text-gray-600">
+                      {productData.shipping.shippingFee}
+                    </p>
                   </div>
                 </div>
 
@@ -234,8 +260,12 @@ export default function ProductDetail() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">Đơn vị bán</p>
-                    <p className="text-sm text-gray-600">{productData.shipping.seller}</p>
-                    <p className="text-sm text-gray-500">{productData.shipping.location}</p>
+                    <p className="text-sm text-gray-600">
+                      {productData.shipping.seller}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {productData.shipping.location}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -250,35 +280,44 @@ export default function ProductDetail() {
 
         {/* Product Specifications */}
         <div className="mt-8 bg-white rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Thông tin sản phẩm</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Thông tin sản phẩm
+          </h2>
           <div className="overflow-x-auto">
             <table className="w-full">
               <tbody>
-                {Object.entries(productData.specifications).map(([key, value], index) => (
-                  <tr key={key} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                    <td className="py-3 px-4 font-medium text-gray-700 w-1/3">{key}</td>
-                    <td className="py-3 px-4 text-gray-600">{value}</td>
-                  </tr>
-                ))}
+                {Object.entries(productData.specifications).map(
+                  ([key, value], index) => (
+                    <tr
+                      key={key}
+                      className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                    >
+                      <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
+                        {key}
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">{value}</td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-        {/* Modal */}
-        <ProductModal
-          product={productForModal}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onAddToCart={handleAddToCart}
-        />
+      {/* Modal */}
+      <ProductModal
+        product={productForModal}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddToCart={handleAddToCart}
+      />
     </div>
-  )
+  );
 }
 
 // Render Modal
 // Lưu ý: Modal được đặt cuối cùng để không ảnh hưởng layout chính
 // và được điều khiển bằng state isModalOpen
 export function ProductDetailWithModalWrapper() {
-  return <ProductDetail />
+  return <ProductDetail />;
 }

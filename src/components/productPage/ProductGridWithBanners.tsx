@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ProductCard } from "@/components/products/ProductCard";
-import Banner from "./Banner";
+import Banner from "./banner/Banner";
 import type { Product } from "@/types/product.type";
 import type { Banner as BannerType } from "@/types/banner.type";
 

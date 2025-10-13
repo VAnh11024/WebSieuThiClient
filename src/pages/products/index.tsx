@@ -2,11 +2,12 @@ import { CategoryNav } from "@/components/CategoryNav";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import type { CategoryNav as Category, Product, Banner } from "@/types";
-import Banners from "@/components/productPage/Banners";
-import Article from "@/components/productPage/Article";
+import Banners from "@/components/productPage/banner/Banners";
+import Article from "@/components/productPage/article/Article";
 import ProductGridWithBanners from "@/components/productPage/ProductGridWithBanners";
 import type { Article as ArticleType } from "@/types/article.type";
-// import FilterBar from "@/components/productPage/FilterBar";
+import FilterBar from "@/components/productPage/filter/FilterBar";
+import Promotion from "@/components/productPage/promotion/Promotion";
 
 const sampleCategories: Category[] = [
   {
@@ -82,6 +83,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: true,
       slug: "gau-do-mi-an-lien",
+      quantity: "500g",
     },
     {
       id: 2,
@@ -95,6 +97,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "hao-hao-mi-tom",
+      quantity: "500g",
     },
     {
       id: 3,
@@ -108,6 +111,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: true,
       slug: "kokomi-mi-lau",
+      quantity: "75g",
     },
     {
       id: 4,
@@ -121,6 +125,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "omachi-mi-tom",
+      quantity: "75g",
     },
     {
       id: 5,
@@ -134,6 +139,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "acecook-mi-goi",
+      quantity: "65g",
     },
     {
       id: 6,
@@ -147,6 +153,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "miliket-mi-tom",
+      quantity: "75g",
     },
     {
       id: 7,
@@ -160,6 +167,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 11,
       is_hot: true,
       slug: "sakura-mi-lau",
+      quantity: "80g",
     },
     {
       id: 8,
@@ -173,6 +181,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 8,
       is_hot: false,
       slug: "vifon-mi-tom",
+      quantity: "70g",
     },
     {
       id: 9,
@@ -186,6 +195,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "khong-guan-mi-an-lien",
+      quantity: "75g",
     },
     {
       id: 10,
@@ -199,6 +209,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: true,
       slug: "sapporo-mi-nhat",
+      quantity: "85g",
     },
     {
       id: 11,
@@ -212,6 +223,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "maruchan-mi-han",
+      quantity: "70g",
     },
     {
       id: 12,
@@ -225,6 +237,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: true,
       slug: "nissin-mi-nhat",
+      quantity: "85g",
     },
   ],
   "dau-an": [
@@ -240,6 +253,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 12,
       is_hot: true,
       slug: "dau-an-neptune",
+      quantity: "1L",
     },
     {
       id: 14,
@@ -253,6 +267,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 11,
       is_hot: false,
       slug: "dau-an-simply",
+      quantity: "1L",
     },
     {
       id: 15,
@@ -266,6 +281,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 10,
       is_hot: false,
       slug: "dau-an-tuong-an",
+      quantity: "900ml",
     },
   ],
   "thit-heo": [
@@ -281,6 +297,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 8,
       is_hot: true,
       slug: "thit-heo-ba-chi",
+      quantity: "1kg",
     },
     {
       id: 17,
@@ -294,6 +311,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 7,
       is_hot: false,
       slug: "thit-heo-nac",
+      quantity: "1kg",
     },
     {
       id: 18,
@@ -307,6 +325,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 7,
       is_hot: false,
       slug: "thit-heo-suon",
+      quantity: "1kg",
     },
   ],
   "rau-la": [
@@ -322,6 +341,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 20,
       is_hot: false,
       slug: "rau-muong",
+      quantity: "500g",
     },
     {
       id: 20,
@@ -335,6 +355,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 17,
       is_hot: false,
       slug: "rau-cai",
+      quantity: "500g",
     },
     {
       id: 21,
@@ -348,6 +369,7 @@ const sampleProducts: Record<string, Product[]> = {
       discount_percent: 9,
       is_hot: false,
       slug: "rau-xa-lach",
+      quantity: "300g",
     },
   ],
 };
@@ -386,12 +408,15 @@ const sampleArticles: ArticleType[] = [
 ];
 
 export default function ProductsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>(sampleCategories);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+
   // Lấy category từ URL query parameter
   const categoryFromUrl = searchParams.get("category");
+  const brandsFromUrl = searchParams.get("brands");
 
   useEffect(() => {
     if (categoryFromUrl) {
@@ -401,6 +426,18 @@ export default function ProductsPage() {
       fetchCategories();
     }
   }, [categoryFromUrl]);
+
+  // Đồng bộ selectedBrands với URL
+  useEffect(() => {
+    if (brandsFromUrl) {
+      const brandsArray = brandsFromUrl
+        .split(",")
+        .filter((brand) => brand.trim() !== "");
+      setSelectedBrands(brandsArray);
+    } else {
+      setSelectedBrands([]);
+    }
+  }, [brandsFromUrl]);
 
   const fetchProductsByCategory = async (categoryId: string) => {
     try {
@@ -440,6 +477,24 @@ export default function ProductsPage() {
     // TODO: Implement add to cart logic
   };
 
+  const handleBrandSelect = (brandId: string) => {
+    const newSelectedBrands = selectedBrands.includes(brandId)
+      ? selectedBrands.filter((id) => id !== brandId) // Bỏ chọn nếu đã chọn
+      : [...selectedBrands, brandId]; // Thêm vào nếu chưa chọn
+
+    setSelectedBrands(newSelectedBrands);
+
+    // Cập nhật URL với brands mới
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (newSelectedBrands.length > 0) {
+      newSearchParams.set("brands", newSelectedBrands.join(","));
+    } else {
+      newSearchParams.delete("brands");
+    }
+
+    setSearchParams(newSearchParams);
+  };
+
   return (
     <div>
       <CategoryNav
@@ -448,9 +503,15 @@ export default function ProductsPage() {
         selectedCategoryId={selectedCategoryId}
         onCategorySelect={handleCategorySelect}
       />
-      {/* <div className="mt-5">
-        <FilterBar />
-      </div> */}
+      <div className="mt-5">
+        <FilterBar
+          onBrandSelect={handleBrandSelect}
+          selectedBrands={selectedBrands}
+        />
+      </div>
+      <div className="mt-5">
+        <Promotion products={products} onAddToCart={handleAddToCart} />
+      </div>
       <div className="mt-5">
         <Banners banners={sampleBanners} />
       </div>
