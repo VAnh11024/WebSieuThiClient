@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import productService from "../services/productService";
 import type { Product } from "../../types";
+import type { ErrorResponse } from "../types";
 
 /**
  * Hook để lấy danh sách sản phẩm (khớp với NestJS backend)
@@ -17,8 +18,9 @@ export const useProducts = (categorySlug?: string) => {
         setError(null);
         const data = await productService.getProducts(categorySlug);
         setProducts(data);
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Không thể tải sản phẩm");
+      } catch (err) {
+        const error = err as ErrorResponse;
+        setError(error.response?.data?.message || "Không thể tải sản phẩm");
       } finally {
         setLoading(false);
       }
@@ -32,8 +34,9 @@ export const useProducts = (categorySlug?: string) => {
       setLoading(true);
       const data = await productService.getProducts(categorySlug);
       setProducts(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Không thể tải sản phẩm");
+    } catch (err) {
+      const error = err as ErrorResponse;
+      setError(error.response?.data?.message || "Không thể tải sản phẩm");
     } finally {
       setLoading(false);
     }
@@ -57,8 +60,9 @@ export const useProductPromotions = (categorySlug?: string) => {
         setError(null);
         const data = await productService.getProductPromotions(categorySlug);
         setProducts(data);
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Không thể tải sản phẩm");
+      } catch (err) {
+        const error = err as ErrorResponse;
+        setError(error.response?.data?.message || "Không thể tải sản phẩm");
       } finally {
         setLoading(false);
       }
@@ -87,8 +91,9 @@ export const useProduct = (id: string) => {
         setError(null);
         const data = await productService.getProductById(id);
         setProduct(data);
-      } catch (err: any) {
-        setError(err.response?.data?.message || "Không thể tải sản phẩm");
+      } catch (err) {
+        const error = err as ErrorResponse;
+        setError(error.response?.data?.message || "Không thể tải sản phẩm");
       } finally {
         setLoading(false);
       }

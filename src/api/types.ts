@@ -121,14 +121,11 @@ export interface CreateOrderRequest {
   note?: string;
 }
 
-export interface Order {
-  id: string;
-  userId: string;
-  items: CartItem[];
-  totalAmount: number;
-  status: "pending" | "confirmed" | "shipping" | "delivered" | "cancelled";
-  shippingAddress: any;
-  paymentMethod: string;
-  createdAt: string;
-  updatedAt: string;
+export interface ErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
 }

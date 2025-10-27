@@ -1,14 +1,6 @@
 import { useState } from "react";
 import authService from "../services/authService";
-
-interface ErrorResponse {
-  response?: {
-    status?: number;
-    data?: {
-      message?: string;
-    };
-  };
-}
+import type { ErrorResponse } from "../types";
 
 /**
  * Hook để xử lý authentication (khớp với NestJS backend)
