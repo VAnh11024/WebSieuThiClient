@@ -1,86 +1,47 @@
 import api from "../axiosConfig";
-import type {
-  ApiResponse,
-  AddToCartRequest,
-  UpdateCartItemRequest,
-  CartItem,
-} from "../types";
+
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
 
 export interface Cart {
-  items: Array<{
-    product: any;
-    quantity: number;
-    price: number;
-  }>;
+  items: CartItem[];
   totalItems: number;
   totalPrice: number;
 }
 
 /**
- * Cart Service - Xử lý các API liên quan đến giỏ hàng
+ * Cart Service - Xử lý các API liên quan đến giỏ hàng (khớp với NestJS backend)
  */
 class CartService {
   private readonly basePath = "/cart";
 
   /**
    * Lấy giỏ hàng hiện tại
+   * GET /cart
    */
   async getCart(): Promise<Cart> {
-    const response = await api.get<ApiResponse<Cart>>(this.basePath);
-    return response.data.data;
+    const response = await api.get<Cart>(this.basePath);
+    return response.data;
   }
 
   /**
    * Thêm sản phẩm vào giỏ hàng
+   * POST /cart/:productId
    */
-  async addToCart(data: AddToCartRequest): Promise<Cart> {
-    const response = await api.post<ApiResponse<Cart>>(
-      `${this.basePath}/items`,
-      data
-    );
-    return response.data.data;
-  }
-
-  /**
-   * Cập nhật số lượng sản phẩm trong giỏ hàng
-   */
-  async updateCartItem(
-    productId: string,
-    data: UpdateCartItemRequest
-  ): Promise<Cart> {
-    const response = await api.put<ApiResponse<Cart>>(
-      `${this.basePath}/items/${productId}`,
-      data
-    );
-    return response.data.data;
+  async addToCart(productId: string): Promise<Cart> {
+    const response = await api.post<Cart>(`${this.basePath}/${productId}`);
+    return response.data;
   }
 
   /**
    * Xóa sản phẩm khỏi giỏ hàng
+   * DELETE /cart/:productId
    */
   async removeFromCart(productId: string): Promise<Cart> {
-    const response = await api.delete<ApiResponse<Cart>>(
-      `${this.basePath}/items/${productId}`
-    );
-    return response.data.data;
-  }
-
-  /**
-   * Xóa toàn bộ giỏ hàng
-   */
-  async clearCart(): Promise<void> {
-    await api.delete(this.basePath);
-  }
-
-  /**
-   * Đồng bộ giỏ hàng từ localStorage lên server
-   */
-  async syncCart(items: CartItem[]): Promise<Cart> {
-    const response = await api.post<ApiResponse<Cart>>(
-      `${this.basePath}/sync`,
-      { items }
-    );
-    return response.data.data;
+    const response = await api.delete<Cart>(`${this.basePath}/${productId}`);
+    return response.data;
   }
 }
 

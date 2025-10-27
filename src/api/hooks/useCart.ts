@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import cartService, { type Cart } from "../services/cartService";
-import type { AddToCartRequest } from "../types";
+
+interface ErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 /**
- * Hook để quản lý giỏ hàng
+ * Hook để quản lý giỏ hàng (khớp với NestJS backend)
  */
 export const useCart = () => {
   const [cart, setCart] = useState<Cart | null>(null);
@@ -21,47 +29,33 @@ export const useCart = () => {
       setError(null);
       const data = await cartService.getCart();
       setCart(data);
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as ErrorResponse;
       // Nếu user chưa đăng nhập, tạo cart rỗng
-      if (err.response?.status === 401) {
+      if (error.response?.status === 401) {
         setCart({
           items: [],
           totalItems: 0,
           totalPrice: 0,
         });
       } else {
-        setError(err.response?.data?.message || "Không thể tải giỏ hàng");
+        setError(error.response?.data?.message || "Không thể tải giỏ hàng");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const addToCart = async (data: AddToCartRequest) => {
+  const addToCart = async (productId: string) => {
     try {
       setError(null);
-      const updatedCart = await cartService.addToCart(data);
+      const updatedCart = await cartService.addToCart(productId);
       setCart(updatedCart);
       return updatedCart;
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as ErrorResponse;
       const errorMessage =
-        err.response?.data?.message || "Thêm vào giỏ hàng thất bại";
-      setError(errorMessage);
-      throw err;
-    }
-  };
-
-  const updateQuantity = async (productId: string, quantity: number) => {
-    try {
-      setError(null);
-      const updatedCart = await cartService.updateCartItem(productId, {
-        quantity,
-      });
-      setCart(updatedCart);
-      return updatedCart;
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Cập nhật giỏ hàng thất bại";
+        error.response?.data?.message || "Thêm vào giỏ hàng thất bại";
       setError(errorMessage);
       throw err;
     }
@@ -73,26 +67,10 @@ export const useCart = () => {
       const updatedCart = await cartService.removeFromCart(productId);
       setCart(updatedCart);
       return updatedCart;
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as ErrorResponse;
       const errorMessage =
-        err.response?.data?.message || "Xóa sản phẩm thất bại";
-      setError(errorMessage);
-      throw err;
-    }
-  };
-
-  const clearCart = async () => {
-    try {
-      setError(null);
-      await cartService.clearCart();
-      setCart({
-        items: [],
-        totalItems: 0,
-        totalPrice: 0,
-      });
-    } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message || "Xóa giỏ hàng thất bại";
+        error.response?.data?.message || "Xóa sản phẩm thất bại";
       setError(errorMessage);
       throw err;
     }
@@ -104,8 +82,6 @@ export const useCart = () => {
     error,
     fetchCart,
     addToCart,
-    updateQuantity,
     removeItem,
-    clearCart,
   };
 };

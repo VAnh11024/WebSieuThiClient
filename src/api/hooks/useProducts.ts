@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
 import productService from "../services/productService";
-import type { ProductQuery, PaginatedResponse } from "../types";
 import type { Product } from "../../types";
 
 /**
- * Hook để lấy danh sách sản phẩm
+ * Hook để lấy danh sách sản phẩm (khớp với NestJS backend)
  */
-export const useProducts = (params?: ProductQuery) => {
+export const useProducts = (categorySlug?: string) => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [pagination, setPagination] = useState<
-    PaginatedResponse<Product>["pagination"] | null
-  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,9 +15,8 @@ export const useProducts = (params?: ProductQuery) => {
       try {
         setLoading(true);
         setError(null);
-        const response = await productService.getProducts(params);
-        setProducts(response.data);
-        setPagination(response.pagination);
+        const data = await productService.getProducts(categorySlug);
+        setProducts(data);
       } catch (err: any) {
         setError(err.response?.data?.message || "Không thể tải sản phẩm");
       } finally {
@@ -30,14 +25,13 @@ export const useProducts = (params?: ProductQuery) => {
     };
 
     fetchProducts();
-  }, [JSON.stringify(params)]);
+  }, [categorySlug]);
 
   const refetch = async () => {
     try {
       setLoading(true);
-      const response = await productService.getProducts(params);
-      setProducts(response.data);
-      setPagination(response.pagination);
+      const data = await productService.getProducts(categorySlug);
+      setProducts(data);
     } catch (err: any) {
       setError(err.response?.data?.message || "Không thể tải sản phẩm");
     } finally {
@@ -45,7 +39,35 @@ export const useProducts = (params?: ProductQuery) => {
     }
   };
 
-  return { products, pagination, loading, error, refetch };
+  return { products, loading, error, refetch };
+};
+
+/**
+ * Hook để lấy sản phẩm khuyến mãi
+ */
+export const useProductPromotions = (categorySlug?: string) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await productService.getProductPromotions(categorySlug);
+        setProducts(data);
+      } catch (err: any) {
+        setError(err.response?.data?.message || "Không thể tải sản phẩm");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [categorySlug]);
+
+  return { products, loading, error };
 };
 
 /**
@@ -76,41 +98,4 @@ export const useProduct = (id: string) => {
   }, [id]);
 
   return { product, loading, error };
-};
-
-/**
- * Hook để search sản phẩm
- */
-export const useSearchProducts = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const search = async (
-    query: string,
-    params?: Omit<ProductQuery, "search">
-  ) => {
-    if (!query.trim()) {
-      setProducts([]);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await productService.searchProducts(query, params);
-      setProducts(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Tìm kiếm thất bại");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const clearResults = () => {
-    setProducts([]);
-    setError(null);
-  };
-
-  return { products, loading, error, search, clearResults };
 };

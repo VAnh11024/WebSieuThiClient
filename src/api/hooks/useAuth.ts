@@ -1,28 +1,44 @@
 import { useState } from "react";
 import authService from "../services/authService";
-import type { LoginRequest, RegisterRequest } from "../types";
+
+interface ErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+}
 
 /**
- * Hook để xử lý authentication
+ * Hook để xử lý authentication (khớp với NestJS backend)
  */
 export const useAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const login = async (data: LoginRequest) => {
+  /**
+   * Đăng nhập bằng email
+   */
+  const loginEmail = async (email: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.login(data);
+      const response = await authService.loginEmail(email, password);
 
-      // Lưu tokens vào localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("user", JSON.stringify(response.user));
+      // Lưu tokens và user info vào localStorage
+      if (response.accessToken) {
+        localStorage.setItem("accessToken", response.accessToken);
+      }
+      if (response.user) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
 
       return response;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Đăng nhập thất bại";
+    } catch (err) {
+      const error = err as ErrorResponse;
+      const errorMessage =
+        error.response?.data?.message || "Đăng nhập thất bại";
       setError(errorMessage);
       throw err;
     } finally {
@@ -30,14 +46,19 @@ export const useAuth = () => {
     }
   };
 
-  const register = async (data: RegisterRequest) => {
+  /**
+   * Đăng nhập bằng số điện thoại (bước 1: gửi OTP)
+   */
+  const loginPhone = async (phone: string) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.register(data);
+      const response = await authService.loginPhone(phone);
       return response;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Đăng ký thất bại";
+    } catch (err) {
+      const error = err as ErrorResponse;
+      const errorMessage =
+        error.response?.data?.message || "Đăng nhập thất bại";
       setError(errorMessage);
       throw err;
     } finally {
@@ -45,35 +66,126 @@ export const useAuth = () => {
     }
   };
 
+  /**
+   * Xác thực SMS khi login (bước 2)
+   */
+  const verifyLoginSms = async (userId: string, code: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await authService.verifyLoginSms(userId, code);
+
+      // Lưu tokens và user info
+      if (response.accessToken) {
+        localStorage.setItem("accessToken", response.accessToken);
+      }
+      if (response.user) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+
+      return response;
+    } catch (err) {
+      const error = err as ErrorResponse;
+      const errorMessage = error.response?.data?.message || "Xác thực thất bại";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Đăng ký bằng email
+   */
+  const registerEmail = async (
+    email: string,
+    password: string,
+    name?: string
+  ) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await authService.registerEmail(email, password, name);
+
+      // Lưu tokens và user info
+      if (response.accessToken) {
+        localStorage.setItem("accessToken", response.accessToken);
+      }
+      if (response.user) {
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+
+      return response;
+    } catch (err) {
+      const error = err as ErrorResponse;
+      const errorMessage = error.response?.data?.message || "Đăng ký thất bại";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Xác thực email OTP
+   */
+  const verifyEmail = async (email: string, code: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await authService.verifyEmail(email, code);
+      return response;
+    } catch (err) {
+      const error = err as ErrorResponse;
+      const errorMessage = error.response?.data?.message || "Xác thực thất bại";
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Đăng xuất
+   */
   const logout = async () => {
     try {
       setLoading(true);
       await authService.logout();
 
-      // Xóa user data
-      localStorage.removeItem("user");
-
       // Chuyển về trang chủ
       window.location.href = "/";
-    } catch (err: any) {
+    } catch (err) {
       console.error("Logout error:", err);
+      // Vẫn xóa dữ liệu local nếu có lỗi
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Lấy user hiện tại từ localStorage
+   */
   const getCurrentUser = () => {
     const userStr = localStorage.getItem("user");
     return userStr ? JSON.parse(userStr) : null;
   };
 
+  /**
+   * Kiểm tra đã đăng nhập chưa
+   */
   const isAuthenticated = () => {
     return !!localStorage.getItem("accessToken");
   };
 
   return {
-    login,
-    register,
+    loginEmail,
+    loginPhone,
+    verifyLoginSms,
+    registerEmail,
+    verifyEmail,
     logout,
     getCurrentUser,
     isAuthenticated,

@@ -33,13 +33,13 @@ VITE_API_URL=http://localhost:3000/api
 ```typescript
 import { authService, productService } from "@/api";
 
-// Đăng nhập
-const login = async () => {
+// Đăng nhập bằng email
+const loginWithEmail = async () => {
   try {
-    const response = await authService.login({
-      phoneNumber: "0123456789",
-      password: "password123",
-    });
+    const response = await authService.loginEmail(
+      "user@example.com",
+      "password123"
+    );
 
     // Token tự động được lưu và gắn vào request headers
     console.log("User:", response.user);
@@ -48,18 +48,38 @@ const login = async () => {
   }
 };
 
-// Lấy danh sách sản phẩm
+// Đăng nhập bằng phone (2 bước: gửi OTP -> xác thực)
+const loginWithPhone = async () => {
+  try {
+    // Bước 1: Gửi OTP
+    const result = await authService.loginPhone("0123456789");
+    console.log("OTP sent:", result.userId);
+
+    // Bước 2: Xác thực OTP
+    const response = await authService.verifyLoginSms(result.userId, "123456");
+    console.log("User:", response.user);
+  } catch (error) {
+    console.error("Login failed:", error);
+  }
+};
+
+// Lấy danh sách sản phẩm theo category
 const fetchProducts = async () => {
   try {
-    const products = await productService.getProducts({
-      page: 1,
-      limit: 20,
-      category: "thuc-pham-tuoi-song",
-    });
-
-    console.log("Products:", products.data);
+    const products = await productService.getProducts("thuc-pham-tuoi-song");
+    console.log("Products:", products);
   } catch (error) {
     console.error("Failed to fetch products:", error);
+  }
+};
+
+// Lấy sản phẩm khuyến mãi
+const fetchPromotions = async () => {
+  try {
+    const products = await productService.getProductPromotions();
+    console.log("Promotions:", products);
+  } catch (error) {
+    console.error("Failed to fetch promotions:", error);
   }
 };
 ```
@@ -108,13 +128,25 @@ function ProductList() {
 
 ### Đăng nhập
 
-```typescript
-const response = await authService.login({
-  phoneNumber: "0123456789",
-  password: "password123",
-});
+**Email:**
 
-// accessToken và refreshToken tự động được lưu vào localStorage
+```typescript
+const response = await authService.loginEmail(
+  "user@example.com",
+  "password123"
+);
+// accessToken tự động được lưu vào localStorage (cookies)
+```
+
+**Phone (2 bước):**
+
+```typescript
+// Bước 1: Gửi OTP
+const { userId } = await authService.loginPhone("0123456789");
+
+// Bước 2: Xác thực OTP
+const response = await authService.verifyLoginSms(userId, "123456");
+// accessToken tự động được lưu vào localStorage (cookies)
 ```
 
 ### Auto Refresh Token
@@ -156,61 +188,69 @@ await authService.logout();
 ### 1. Auth Service
 
 ```typescript
-authService.login(data);
-authService.register(data);
-authService.sendOtp(phoneNumber);
-authService.verifyOtp(data);
+// Đăng ký & Đăng nhập bằng Email
+authService.registerEmail(email, password, name?);
+authService.verifyEmail(email, code);
+authService.resendEmailVerification(email);
+authService.loginEmail(email, password);
+
+// Đăng ký & Đăng nhập bằng Phone
+authService.registerPhone(phone, name?);
+authService.verifyPhoneCode(userId, code);
+authService.loginPhone(phone);
+authService.verifyLoginSms(userId, code);
+
+// User Management
+authService.getMe();
 authService.logout();
-authService.getCurrentUser();
-authService.changePassword(oldPassword, newPassword);
-authService.forgotPassword(phoneNumber);
-authService.resetPassword(phoneNumber, otp, newPassword);
+authService.logoutAll();
+authService.refreshToken();
+authService.loginWithGoogle();
 ```
 
 ### 2. Product Service
 
 ```typescript
-productService.getProducts(params);
+// Lấy sản phẩm (GET /products?category=slug)
+productService.getProducts(categorySlug?);
+
+// Lấy sản phẩm khuyến mãi (GET /products/promotions?category=slug)
+productService.getProductPromotions(categorySlug?);
+
+// Chi tiết sản phẩm (GET /products/:id)
 productService.getProductById(id);
-productService.getProductBySlug(slug);
-productService.searchProducts(query, params);
-productService.getRelatedProducts(productId, limit);
-productService.getFeaturedProducts(limit);
-productService.getNewProducts(limit);
-productService.getBestSellingProducts(limit);
-productService.getDiscountedProducts(limit);
 ```
 
-### 3. Catalog Service
+### 3. Category Service
 
 ```typescript
-catalogService.getCategories(params);
-catalogService.getCategoryById(id);
-catalogService.getCategoryBySlug(slug);
-catalogService.getSubcategories(parentId);
-catalogService.getProductsByCategory(categoryId, params);
+// GET /categories
+categoryService.getAllCategories();
+
+// GET /categories/root
+categoryService.getRootCategories();
+
+// GET /categories/:id
+categoryService.getCategoryById(id);
+
+// GET /categories/:id/children
+categoryService.getCategoryChildren(id);
+
+// GET /categories/slug/:slug
+categoryService.getCategoryBySlug(slug);
 ```
 
 ### 4. Cart Service
 
 ```typescript
+// GET /cart
 cartService.getCart();
-cartService.addToCart(data);
-cartService.updateCartItem(productId, data);
+
+// POST /cart/:productId
+cartService.addToCart(productId);
+
+// DELETE /cart/:productId
 cartService.removeFromCart(productId);
-cartService.clearCart();
-cartService.syncCart(items);
-```
-
-### 5. Order Service
-
-```typescript
-orderService.createOrder(data);
-orderService.getMyOrders(params);
-orderService.getOrderById(id);
-orderService.cancelOrder(id, reason);
-orderService.confirmDelivery(id);
-orderService.trackOrder(id);
 ```
 
 ## 🎯 Best Practices

@@ -1,60 +1,104 @@
 import api from "../axiosConfig";
-import type {
-  LoginRequest,
-  LoginResponse,
-  RegisterRequest,
-  RefreshTokenRequest,
-  RefreshTokenResponse,
-  VerifyOtpRequest,
-  ApiResponse,
-  User,
-} from "../types";
+import type { LoginResponse, ApiResponse, User } from "../types";
 
 /**
- * Auth Service - Xử lý các API liên quan đến authentication
+ * Auth Service - Xử lý các API liên quan đến authentication (khớp với NestJS backend)
  */
 class AuthService {
   private readonly basePath = "/auth";
 
   /**
-   * Đăng nhập
+   * Đăng ký bằng email
    */
-  async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<ApiResponse<LoginResponse>>(
-      `${this.basePath}/login`,
-      data
-    );
-    return response.data.data;
-  }
-
-  /**
-   * Đăng ký tài khoản
-   */
-  async register(data: RegisterRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(
-      `${this.basePath}/register`,
-      data
+  async registerEmail(
+    email: string,
+    password: string,
+    name?: string
+  ): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>(
+      `${this.basePath}/register-email`,
+      { email, password, name }
     );
     return response.data;
   }
 
   /**
-   * Gửi OTP
+   * Xác thực email OTP
    */
-  async sendOtp(phoneNumber: string): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(`${this.basePath}/send-otp`, {
-      phoneNumber,
+  async verifyEmail(email: string, code: string): Promise<ApiResponse> {
+    const response = await api.post<ApiResponse>(
+      `${this.basePath}/verify-email`,
+      { email, code }
+    );
+    return response.data;
+  }
+
+  /**
+   * Gửi lại email verification
+   */
+  async resendEmailVerification(email: string): Promise<ApiResponse> {
+    const response = await api.post<ApiResponse>(
+      `${this.basePath}/resend-email-verification`,
+      { email }
+    );
+    return response.data;
+  }
+
+  /**
+   * Đăng ký bằng số điện thoại
+   */
+  async registerPhone(
+    phone: string,
+    name?: string
+  ): Promise<{ success: boolean; message: string; userId: string }> {
+    const response = await api.post(`${this.basePath}/register-phone`, {
+      phone,
+      name,
     });
     return response.data;
   }
 
   /**
-   * Xác thực OTP
+   * Xác thực phone code (sau khi register)
    */
-  async verifyOtp(data: VerifyOtpRequest): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(
-      `${this.basePath}/verify-otp`,
-      data
+  async verifyPhoneCode(userId: string, code: string): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>(
+      `${this.basePath}/verify-code`,
+      { userId, code }
+    );
+    return response.data;
+  }
+
+  /**
+   * Đăng nhập bằng email
+   */
+  async loginEmail(email: string, password: string): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>(
+      `${this.basePath}/login-email`,
+      { email, password }
+    );
+    return response.data;
+  }
+
+  /**
+   * Đăng nhập bằng số điện thoại
+   */
+  async loginPhone(phone: string): Promise<{
+    success: boolean;
+    message: string;
+    userId: string;
+  }> {
+    const response = await api.post(`${this.basePath}/login-phone`, { phone });
+    return response.data;
+  }
+
+  /**
+   * Xác thực SMS khi login
+   */
+  async verifyLoginSms(userId: string, code: string): Promise<LoginResponse> {
+    const response = await api.post<LoginResponse>(
+      `${this.basePath}/verify-login-sms`,
+      { userId, code }
     );
     return response.data;
   }
@@ -62,72 +106,54 @@ class AuthService {
   /**
    * Refresh token
    */
-  async refreshToken(data: RefreshTokenRequest): Promise<RefreshTokenResponse> {
-    const response = await api.post<ApiResponse<RefreshTokenResponse>>(
-      `${this.basePath}/refresh`,
-      data
+  async refreshToken(): Promise<{ success: boolean; accessToken: string }> {
+    const response = await api.post<{ success: boolean; accessToken: string }>(
+      `${this.basePath}/refresh-token`
     );
-    return response.data.data;
+    return response.data;
   }
 
   /**
    * Đăng xuất
    */
   async logout(): Promise<void> {
-    const refreshToken = localStorage.getItem("refreshToken");
-    await api.post(`${this.basePath}/logout`, { refreshToken });
+    await api.post(`${this.basePath}/logout`);
 
     // Xóa token khỏi localStorage
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+  }
+
+  /**
+   * Đăng xuất khỏi tất cả thiết bị
+   */
+  async logoutAll(): Promise<ApiResponse> {
+    const response = await api.post<ApiResponse>(`${this.basePath}/logout-all`);
+
+    // Xóa token khỏi localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("user");
+
+    return response.data;
   }
 
   /**
    * Lấy thông tin user hiện tại
    */
-  async getCurrentUser(): Promise<User> {
-    const response = await api.get<ApiResponse<User>>(`${this.basePath}/me`);
-    return response.data.data;
+  async getMe(): Promise<User> {
+    const response = await api.get<{ success: boolean; user: User }>(
+      `${this.basePath}/me`
+    );
+    return response.data.user;
   }
 
   /**
-   * Đổi mật khẩu
+   * Đăng nhập với Google (mở window)
    */
-  async changePassword(
-    oldPassword: string,
-    newPassword: string
-  ): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(
-      `${this.basePath}/change-password`,
-      { oldPassword, newPassword }
-    );
-    return response.data;
-  }
-
-  /**
-   * Quên mật khẩu - gửi OTP
-   */
-  async forgotPassword(phoneNumber: string): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(
-      `${this.basePath}/forgot-password`,
-      { phoneNumber }
-    );
-    return response.data;
-  }
-
-  /**
-   * Reset mật khẩu với OTP
-   */
-  async resetPassword(
-    phoneNumber: string,
-    otp: string,
-    newPassword: string
-  ): Promise<ApiResponse> {
-    const response = await api.post<ApiResponse>(
-      `${this.basePath}/reset-password`,
-      { phoneNumber, otp, newPassword }
-    );
-    return response.data;
+  loginWithGoogle(): void {
+    window.location.href = `${api.defaults.baseURL}${this.basePath}/google`;
   }
 }
 
