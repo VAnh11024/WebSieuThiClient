@@ -115,17 +115,17 @@ export default function CartWithItems({ items, onUpdateQuantity, onRemoveItem, o
                       <div className="flex items-center bg-gradient-to-r from-[#007E42]/10 to-[#00a855]/10 border-2 border-[#007E42] rounded-xl overflow-hidden shadow-md">
                         <button
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                          className="px-4 py-2.5 hover:bg-[#007E42] hover:text-white transition-all duration-200 group"
+                          className="flex items-center justify-center px-4 py-2.5 min-h-[44px] hover:bg-[#007E42] hover:text-white transition-all duration-200 group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                           disabled={item.quantity <= 1}
                         >
-                          <Minus className="w-4 h-4 text-[#007E42] group-hover:text-white" />
+                          <Minus className="w-4 h-4 text-[#007E42] group-hover:text-white group-disabled:text-gray-400" />
                         </button>
-                        <span className="px-5 py-2.5 text-base font-bold text-gray-800 min-w-[50px] text-center bg-white">
+                        <span className="px-5 py-2.5 text-base font-bold text-gray-800 min-w-[50px] text-center bg-white min-h-[44px] flex items-center justify-center">
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                          className="px-4 py-2.5 hover:bg-[#007E42] hover:text-white transition-all duration-200 group"
+                          className="flex items-center justify-center px-4 py-2.5 min-h-[44px] hover:bg-[#007E42] hover:text-white transition-all duration-200 group"
                         >
                           <Plus className="w-4 h-4 text-[#007E42] group-hover:text-white" />
                         </button>

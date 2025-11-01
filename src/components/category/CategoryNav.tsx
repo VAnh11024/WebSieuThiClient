@@ -7,6 +7,13 @@ import type { CategoryNav as Category, CategoryNavProps } from "@/types/category
 
 const defaultCategories: Category[] = [
   {
+    id: "khuyen-mai",
+    name: "KHUYẾN MÃI SỐC",
+    image:
+      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/flash-sale_202509181309465062.gif",
+    badgeColor: "bg-red-500",
+  },
+  {
     id: "giat-xa",
     name: "Giặt xả",
     image:
@@ -227,7 +234,9 @@ export function CategoryNav({
         }`;
       case "home":
       default:
-        return "text-xs text-center leading-tight text-foreground max-w-[80px] truncate";
+        return `text-xs text-center leading-tight max-w-[80px] truncate ${
+          category.name === "KHUYẾN MÃI SỐC" ? "text-red-600" : "text-foreground"
+        }`;
     }
   };
 
@@ -264,34 +273,47 @@ export function CategoryNav({
         className="w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
         <div className={`flex p-1 ${getGapStyles()}`}>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => handleCategoryClick(category)}
-              className={getItemStyles(category)}
-            >
-              <div className={getImageStyles()}>
-                <div className={getImageContainerStyles()}>
-                  <img
-                    src={category.image || "/placeholder.svg"}
-                    alt={category.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-
-                {/* Badge - chỉ hiển thị ở variant home */}
-                {variant === "home" && category.badge && (
-                  <div
-                    className={`absolute -top-1 -right-1 ${category.badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap`}
-                  >
-                    {category.badge}
-                  </div>
+          {categories.map((category, index) => {
+            // Tìm index của category "KHUYẾN MÃI SỐC"
+            const promotionCategoryIndex = categories.findIndex(
+              (cat) => cat.name === "KHUYẾN MÃI SỐC"
+            );
+            const isAfterPromotion = promotionCategoryIndex !== -1 && index === promotionCategoryIndex + 1;
+            
+            return (
+              <div key={category.id} className="flex items-center">
+                {/* Thêm dấu | sau "KHUYẾN MÃI SỐC" */}
+                {isAfterPromotion && (
+                  <div className="text-gray-300 mx-1 text-2xl font-light">|</div>
                 )}
-              </div>
+                <button
+                  onClick={() => handleCategoryClick(category)}
+                  className={getItemStyles(category)}
+                >
+                  <div className={getImageStyles()}>
+                    <div className={getImageContainerStyles()}>
+                      <img
+                        src={category.image || "/placeholder.svg"}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-              <span className={getTextStyles(category)}>{category.name}</span>
-            </button>
-          ))}
+                    {/* Badge - chỉ hiển thị ở variant home */}
+                    {variant === "home" && category.badge && (
+                      <div
+                        className={`absolute -top-1 -right-1 ${category.badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap`}
+                      >
+                        {category.badge}
+                      </div>
+                    )}
+                  </div>
+
+                  <span className={getTextStyles(category)}>{category.name}</span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

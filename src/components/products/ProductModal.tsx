@@ -176,36 +176,65 @@ export function ProductModal({
     }
   };
 
+  const handleAddRelatedToCart = (relatedProduct: Product) => {
+    let currentQuantity = relatedQuantities[relatedProduct.id] || 0;
+    
+    // Nếu quantity là 0, tự động set thành 1
+    if (currentQuantity === 0) {
+      currentQuantity = 1;
+      setRelatedQuantities(prev => ({
+        ...prev,
+        [relatedProduct.id]: 1
+      }));
+    }
+    
+    if (currentQuantity > 0 && relatedProduct.stock_quantity > 0) {
+      // Tạo hiệu ứng bay vào giỏ hàng cho sản phẩm liên quan
+      createFlyingAnimation();
+      
+      // Thêm sản phẩm liên quan vào giỏ hàng ngay lập tức
+      setTimeout(() => {
+        onAddToCart(relatedProduct, currentQuantity);
+        
+        // Reset quantity về 0 sau khi thêm vào giỏ
+        setRelatedQuantities(prev => ({
+          ...prev,
+          [relatedProduct.id]: 0
+        }));
+      }, 400);
+    }
+  };
+
 
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative mx-4 w-full max-w-3xl rounded-lg bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
+      <div className="relative mx-0 sm:mx-4 w-full sm:max-w-3xl max-h-[90vh] sm:max-h-[85vh] rounded-t-2xl sm:rounded-lg bg-white shadow-xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between border-b p-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between border-b p-4 flex-shrink-0">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-1 pr-2">
             {product.name}
           </h2>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="h-8 w-8 p-0"
+            className="h-8 w-8 p-0 flex-shrink-0"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="overflow-y-auto flex-1 min-h-0">
           {/* Product Info */}
-          <div className="flex gap-6 p-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6">
             {/* Product Image */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 flex justify-center sm:justify-start">
               <img
                 ref={productImageRef}
                 src={product.image_url || "/placeholder.svg"}
                 alt={product.name}
-                className="h-32 w-32 rounded-lg object-contain"
+                className="h-32 w-32 sm:h-32 sm:w-32 rounded-lg object-contain"
               />
             </div>
 
@@ -279,17 +308,16 @@ export function ProductModal({
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Related Products Section */}
-        <div className="border-t bg-gray-50 p-4">
-          <h3 className="mb-3 text-base font-semibold text-gray-900">Sản phẩm liên quan</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Related Products Section */}
+          <div className="border-t bg-gray-50 p-4">
+            <h3 className="mb-3 text-sm sm:text-base font-semibold text-gray-900">Sản phẩm liên quan</h3>
+            <div className="flex gap-2 sm:gap-4 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
             {relatedProducts.map((relatedProduct) => {
               const currentQuantity = relatedQuantities[relatedProduct.id] || 0;
               
               return (
-                <div key={relatedProduct.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div key={relatedProduct.id} className="bg-white rounded-lg shadow-sm border overflow-hidden flex-shrink-0 w-[140px] sm:w-[160px] lg:w-[180px]">
                   {/* Product Image */}
                   <div className="relative">
                     <img
@@ -356,15 +384,27 @@ export function ProductModal({
                         </Button>
                       </div>
                     </div>
+
+                    {/* Add to Cart Button */}
+                    <Button
+                      onClick={() => handleAddRelatedToCart(relatedProduct)}
+                      disabled={relatedProduct.stock_quantity === 0}
+                      className="w-full bg-green-600 text-white hover:bg-green-700 text-xs py-1.5 px-2 h-auto font-medium"
+                      size="sm"
+                    >
+                      <ShoppingCart className="mr-1 h-3 w-3" />
+                      Thêm vào giỏ
+                    </Button>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
+        </div>
 
         {/* Footer */}
-        <div className="border-t p-4">
+        <div className="border-t p-4 flex-shrink-0">
           <Button
             onClick={handleComplete}
             className="w-full bg-green-600 text-white hover:bg-green-700"
