@@ -11,11 +11,6 @@ const categories: Category[] = [
     name: "KHUYẾN MÃI SỐC",
     href: "/khuyen-mai",
     mobileImage: "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8788/trai-cay_202509081009396955.png",
-    subCategories: [
-      { name: "Thịt heo", href: "thit-heo", mobileImage: "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8788/trai-cay_202509081009396955.png" },
-      { name: "Thịt bò", href: "thit-bo", mobileImage: "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8788/trai-cay_202509081009396955.png" },
-      { name: "Thịt gà, vịt", href: "thit-gia-cam", mobileImage: "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8788/trai-cay_202509081009396955.png" },
-    ],
   },
   {
     name: "THỊT, CÁ, TRỨNG, HẢI SẢN",
