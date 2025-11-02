@@ -1,14 +1,22 @@
 import { CategoryNav } from "@/components/category/CategoryNav";
 import MainBanner from "@/components/home/MainBanner";
 import CategorySection from "@/components/home/CategorySection";
-import { mainBanners, sampleProductsByCategory, categoryBanners } from "@/lib/sampleData";
-import type { Product } from "@/types/product.type";
 import { useCart } from "@/components/cart/CartContext";
+import DailyMarket from "@/components/home/DailyMarket";
+
+import {
+  mainBanners,
+  sampleProductsByCategory,
+  categoryBanners,
+} from "@/lib/sampleData";
+import type { Product } from "@/types";
 
 export default function HomePage() {
   const { addToCart } = useCart();
 
-  const handleAddToCart = (product: Product & { selectedQuantity?: number }) => {
+  const handleAddToCart = (
+    product: Product & { selectedQuantity?: number }
+  ) => {
     // Chuyển đổi Product sang CartItem
     addToCart({
       id: product.id.toString(),
@@ -18,16 +26,19 @@ export default function HomePage() {
       unit: product.quantity || "1 sản phẩm",
       quantity: product.selectedQuantity || 1,
     });
-    
+
     // Hiển thị thông báo đã thêm vào giỏ hàng
-    console.log("Đã thêm vào giỏ hàng:", product.name, "x", product.selectedQuantity || 1);
+    console.log(
+      "Đã thêm vào giỏ hàng:",
+      product.name,
+      "x",
+      product.selectedQuantity || 1
+    );
   };
 
   // const handleCategorySelect = (category: { id: string; name: string }) => {
   //   console.log("Đã chọn loại:", category.name);
   // };
-
-
 
   return (
     <div className="min-h-screen bg-blue-50">
@@ -38,10 +49,11 @@ export default function HomePage() {
       </div>
 
       <div className="container mx-auto py-1">
-
-
         {/* Main Banner */}
         <MainBanner banners={mainBanners} />
+
+        {/* Daily Market Section - Đi chợ mỗi ngày */}
+        <DailyMarket />
 
         {/* Category Sections */}
         <div className="space-y-1 sm:space-y-2">
