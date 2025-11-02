@@ -1,12 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
-import { API_GEMINI } from "@/pages/menu";
 import type { Ingredient } from "@/types/menu.type";
 import { sampleProducts } from "@/pages/products/productData";
 import type { Product } from "@/types";
 
 // Khởi tạo Gemini AI
 const ai = new GoogleGenAI({
-  apiKey: API_GEMINI,
+  apiKey: import.meta.env.VITE_API_GEMINI,
 });
 
 /**

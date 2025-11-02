@@ -1,8 +1,5 @@
 import type { MenuCombo } from "@/types/menu.type";
 
-// API Key cho Gemini
-export const API_GEMINI = "AIzaSyD3XRKDweXwYor7k24ULqWY9OOqmXFgFR4";
-
 // Dữ liệu 5 món ăn mẫu
 export const menuCombos: MenuCombo[] = [
   {
