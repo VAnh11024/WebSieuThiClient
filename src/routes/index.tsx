@@ -1,7 +1,7 @@
 import { createBrowserRouter, type RouteObject } from "react-router-dom";
 import MainLayout from "@/layouts/MainLayout";
-import StaffLayout from "@/layouts/StaffLayout"
-import HomePage from "@/pages/home/index"
+import StaffLayout from "@/layouts/StaffLayout";
+import HomePage from "@/pages/home/index";
 import ProductsPage from "@/pages/products";
 import ShoppingCart from "@/pages/cart";
 import ProductDetail from "@/pages/products-detail";
