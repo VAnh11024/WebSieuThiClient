@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import ScrollButton from "@/components/ScrollButton";
+import ScrollButton from "@/components/scroll/ScrollButton";
 import { useNavigate } from "react-router-dom";
 import type { CategoryNav as Category, CategoryNavProps } from "@/types/category.type";
 

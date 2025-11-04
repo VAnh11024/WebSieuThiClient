@@ -8,7 +8,7 @@ import { sampleCategories } from "@/lib/sampleData";
 import type { Product } from "@/types/product.type";
 import type { Banner } from "@/types/banner.type";
 import { ChevronLeft } from "lucide-react";
-import ScrollButton from "@/components/ScrollButton";
+import ScrollButton from "@/components/scroll/ScrollButton";
 import Banners from "@/components/productPage/banner/Banners";
 
 // Dữ liệu mẫu cho các danh mục cấp 1 với sản phẩm khuyến mãi

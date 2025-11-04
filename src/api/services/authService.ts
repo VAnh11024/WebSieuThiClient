@@ -150,6 +150,48 @@ class AuthService {
   }
 
   /**
+   * Cập nhật thông tin profile
+   */
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+    phoneNumber?: string;
+    gender?: "male" | "female";
+    avatarUrl?: string;
+  }): Promise<User> {
+    const response = await api.patch<{ success: boolean; user: User }>(
+      `${this.basePath}/profile`,
+      data
+    );
+    
+    // Cập nhật user trong localStorage
+    if (response.data.user) {
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+    }
+    
+    return response.data.user;
+  }
+
+  /**
+   * Upload avatar
+   */
+  async uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    const response = await api.post<{ success: boolean; avatarUrl: string }>(
+      `${this.basePath}/upload-avatar`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return { avatarUrl: response.data.avatarUrl };
+  }
+
+  /**
    * Đăng nhập với Google (mở window)
    */
   loginWithGoogle(): void {

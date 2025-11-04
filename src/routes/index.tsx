@@ -18,6 +18,7 @@ import SignUpPage from "@/pages/sign_up";
 import OrdersPage from "@/pages/order-management";
 import CustomerOrdersPage from "@/pages/customer-orders";
 import KhuyenMaiPage from "@/pages/sale";
+import AccountPage from "@/pages/account";
 
 const router: RouteObject[] = [
   // User
@@ -57,8 +58,14 @@ const router: RouteObject[] = [
         path: "/khuyen-mai",
         element: <KhuyenMaiPage />,
       },
+      {
+        path: "/account",
+        element: <AccountPage />,
+      },
     ],
   },
+  
+  // Admin
   {
     path: "/admin",
     element: <AdminLayout />,

@@ -6,7 +6,7 @@ import { ProductModal } from "@/components/products/ProductModal";
 import Banners from "@/components/productPage/banner/Banners";
 import type { Banner } from "@/types/banner.type";
 import type { Review, RatingSummary } from "@/types/review.type";
-import ScrollButton from "@/components/ScrollButton";
+import ScrollButton from "@/components/scroll/ScrollButton";
 import { Link } from "react-router-dom";
 
 // Sample product data
