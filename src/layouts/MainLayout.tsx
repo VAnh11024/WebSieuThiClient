@@ -1,9 +1,8 @@
 import { CategorySidebar } from "@/components/category/CategorySideBar";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar/Navbar";
-import { ScrollToTop } from "@/components/ScrollToTop";
+import { Footer } from "@/components/navbar-and-footer/Footer";
+import { Navbar } from "@/components/navbar-and-footer/Navbar";
+import { ScrollToTop } from "@/components/scroll/ScrollToTop";
 import { ChatWidget } from "@/components/chat/ChatWidget";
-
 import { Outlet } from "react-router-dom";
 
 export default function MainLayout() {

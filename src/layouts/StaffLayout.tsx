@@ -1,7 +1,7 @@
-import { Footer } from "@/components/Footer";
-import { ScrollToTop } from "@/components/ScrollToTop";
+import { Footer } from "@/components/navbar-and-footer/Footer";
+import { ScrollToTop } from "@/components/scroll/ScrollToTop";
 import { Outlet } from "react-router-dom";
-import { StaffNavbar } from "@/components/Navbar/StaffNavbar";
+import { StaffNavbar } from "@/components/navbar-and-footer/StaffNavbar";
 
 export default function StaffLayout() {
   return (

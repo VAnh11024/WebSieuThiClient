@@ -47,6 +47,14 @@ export interface RegisterRequest {
   email?: string;
 }
 
+export interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: "male" | "female";
+  avatarUrl?: string;
+}
+
 export interface RefreshTokenRequest {
   refreshToken: string;
 }
@@ -68,6 +76,7 @@ export interface User {
   name?: string;
   email?: string;
   role: string;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

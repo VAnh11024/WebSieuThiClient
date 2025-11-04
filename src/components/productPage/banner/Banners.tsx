@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import type { Banner } from "@/types/banner.type";
 import BannerComponent from "@/components/productPage/banner/Banner";
-import ScrollButton from "@/components/ScrollButton";
+import ScrollButton from "@/components/scroll/ScrollButton";
 
 export default function Banners({ banners }: { banners: Banner[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
