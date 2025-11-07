@@ -7,13 +7,18 @@ import { ShoppingCart, Flame } from "lucide-react";
 import { ProductModal } from "@/components/products/ProductModal";
 import type { ProductCardProps, Product } from "@/types/product.type";
 import { useNavigate } from "react-router-dom";
+import {
+  getProductImage,
+  getProductId,
+  isProductOutOfStock,
+} from "@/lib/constants";
 
 export function HoriztionPromotion({ product, onAddToCart }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const hasDiscount = product.discount_percent > 0;
-  const isOutOfStock = product.stock_quantity === 0;
+  const isOutOfStock = isProductOutOfStock(product);
   const navigate = useNavigate();
-  const productId = product.id;
+  const productId = getProductId(product);
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -46,7 +51,7 @@ export function HoriztionPromotion({ product, onAddToCart }: ProductCardProps) {
                   navigate(`/products-detail/${productId}`);
                 }
               }}
-              src={product.image_url || "/placeholder.svg"}
+              src={getProductImage(product)}
               alt={product.name}
               className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
             />
@@ -81,10 +86,10 @@ export function HoriztionPromotion({ product, onAddToCart }: ProductCardProps) {
               <div className="mb-2 flex flex-col gap-1">
                 {/* Current Price with Unit */}
                 <span className="text-lg font-bold text-red-600 sm:text-xl">
-                  {formatPrice(product.final_price)}
-                  {product.quantity && (
+                  {formatPrice(product.final_price || product.unit_price)}
+                  {product.unit && (
                     <span className="text-sm font-normal text-red-600">
-                      /{product.quantity}
+                      /{product.unit}
                     </span>
                   )}
                 </span>
@@ -96,9 +101,9 @@ export function HoriztionPromotion({ product, onAddToCart }: ProductCardProps) {
                       <span className="line-through">
                         {formatPrice(product.unit_price)}
                       </span>
-                      {product.quantity && (
+                      {product.unit && (
                         <span className="text-xs text-gray-400">
-                          /{product.quantity}
+                          /{product.unit}
                         </span>
                       )}
                     </span>
@@ -110,9 +115,9 @@ export function HoriztionPromotion({ product, onAddToCart }: ProductCardProps) {
               </div>
 
               {/* Stock Status */}
-              {!isOutOfStock && product.stock_quantity < 10 && (
+              {!isOutOfStock && product.quantity < 10 && (
                 <p className="mb-2 text-xs text-destructive sm:text-sm">
-                  Chỉ còn {product.stock_quantity} sản phẩm
+                  Chỉ còn {product.quantity} sản phẩm
                 </p>
               )}
 
