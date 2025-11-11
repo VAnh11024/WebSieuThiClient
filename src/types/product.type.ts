@@ -13,7 +13,7 @@ export interface Product {
   unit_price: number;
   discount_percent: number;
   final_price?: number;
-  image_primary?: string; // Ảnh chính
+  image_primary?: string; // Ảnh chính (single string, not array)
   images?: string[]; // Mảng ảnh phụ
   quantity: number; // Số lượng trong kho (số)
   stock_status: 'in_stock' | 'out_of_stock' | 'preorder';
@@ -22,8 +22,13 @@ export interface Product {
   created_at?: string;
   updated_at?: string;
   
-  // Các field tùy chỉnh cho FE
+  // Các field tùy chỉnh cho FE (backward compatibility)
   selectedQuantity?: number; // Số lượng được chọn khi thêm vào giỏ
+  image_url?: string; // Alias cho image_primary
+  stock_quantity?: number; // Alias cho quantity
+  price?: number; // Alias cho unit_price
+  is_hot?: boolean; // Custom FE field
+  description?: string; // Custom FE field
 }
 
 export interface ProductCardProps {

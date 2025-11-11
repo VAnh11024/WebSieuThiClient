@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Edit2, Trash2, Plus } from "lucide-react";
 import { CategoryForm } from "@/components/admin/categories/CategoryForm";
 import type { CategoryNav as Category } from "@/types";
+import { CATEGORY_PLACEHOLDER_IMAGE } from "@/lib/constants";
 
 interface CategoryTableProps {
   searchTerm: string;
@@ -68,7 +69,7 @@ export function CategoryTable({ searchTerm, categories }: CategoryTableProps) {
                   <td className="font-medium text-foreground">{category.id}</td>
                   <td>
                     <img
-                      src={category.image || "/placeholder.svg"}
+                      src={category.image || CATEGORY_PLACEHOLDER_IMAGE}
                       alt={category.name}
                       className="w-10 h-10 rounded object-cover"
                     />
