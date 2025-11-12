@@ -14,6 +14,7 @@ import {
   PaginationEllipsis,
 } from "@/components/ui/pagination";
 import type { Product } from "@/types";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/constants";
 
 interface ProductTableProps {
   searchTerm: string;
@@ -141,7 +142,7 @@ export function ProductTable({
                 <td className="font-medium text-foreground">{product.id}</td>
                 <td>
                   <img
-                    src={product.image_url || "/placeholder.svg"}
+                    src={product.image_url || PRODUCT_PLACEHOLDER_IMAGE}
                     alt={product.name}
                     className="w-10 h-10 rounded object-cover"
                   />

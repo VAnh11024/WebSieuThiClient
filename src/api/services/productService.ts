@@ -49,6 +49,20 @@ class ProductService {
     const response = await api.get<Product>(`${this.basePath}/${id}`);
     return response.data;
   }
+
+  /**
+   * Lấy sản phẩm liên quan (cùng category)
+   * GET /products/:id/related?limit=5
+   */
+  async getRelatedProducts(id: string, limit: number = 5): Promise<Product[]> {
+    const response = await api.get<Product[]>(
+      `${this.basePath}/${id}/related`,
+      {
+        params: { limit },
+      }
+    );
+    return response.data;
+  }
 }
 
 export default new ProductService();

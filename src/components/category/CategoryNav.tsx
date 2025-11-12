@@ -22,33 +22,40 @@ export function CategoryNav({
   const [loading, setLoading] = useState(!propCategories);
   const navigate = useNavigate();
 
-  // Fetch categories từ API nếu không được truyền qua props
+  // Update categories khi propCategories thay đổi
   useEffect(() => {
     if (propCategories) {
+      console.log("CategoryNav: propCategories changed", propCategories);
       setCategories(propCategories);
-      return;
+      setLoading(false);
+    } else {
+      // Chỉ fetch từ API nếu không có propCategories
+      const fetchCategories = async () => {
+        try {
+          setLoading(true);
+          // Lấy root categories (cấp 1) từ API
+          const data = await categoryService.getRootCategories();
+          
+          // Convert sang CategoryNav format
+          const navCategories = data.map(toCategoryNav);
+          setCategories(navCategories);
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+          // Không có fallback data - hiển thị empty state
+          setCategories([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchCategories();
     }
-
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        // Lấy root categories (cấp 1) từ API
-        const data = await categoryService.getRootCategories();
-        
-        // Convert sang CategoryNav format
-        const navCategories = data.map(toCategoryNav);
-        setCategories(navCategories);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        // Không có fallback data - hiển thị empty state
-        setCategories([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
   }, [propCategories]);
+  
+  // Log khi categories state thay đổi
+  useEffect(() => {
+    console.log("CategoryNav: categories state changed", categories);
+  }, [categories]);
   const checkScroll = () => {
     const container = scrollContainerRef.current;
     if (container) {
@@ -114,7 +121,8 @@ export function CategoryNav({
   };
 
   const getItemStyles = (category: Category) => {
-    const isSelected = selectedCategoryId === category.id;
+    // So sánh với slug hoặc id để hỗ trợ cả 2 cách
+    const isSelected = selectedCategoryId === category.slug || selectedCategoryId === category.id;
 
     switch (variant) {
       case "product-page":
@@ -149,7 +157,8 @@ export function CategoryNav({
   };
 
   const getTextStyles = (category: Category) => {
-    const isSelected = selectedCategoryId === category.id;
+    // So sánh với slug hoặc id để hỗ trợ cả 2 cách
+    const isSelected = selectedCategoryId === category.slug || selectedCategoryId === category.id;
 
     switch (variant) {
       case "product-page":
