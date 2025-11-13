@@ -15,9 +15,11 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       setUser: (user) => {
-        // Clear cart của user cũ trước khi set user mới
         const oldUser = get().user
-        if (oldUser?.id && typeof window !== "undefined") {
+        
+        // Chỉ xoá cart khi chuyển sang user khác hoàn toàn
+        const isDifferentUser = oldUser?.id && oldUser.id !== user?.id
+        if (isDifferentUser && typeof window !== "undefined") {
           localStorage.removeItem(`cart_${oldUser.id}`)
         }
         

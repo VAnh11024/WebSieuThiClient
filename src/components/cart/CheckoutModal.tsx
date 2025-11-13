@@ -1,20 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { X, User, Phone, MapPin, StickyNote, ShoppingBag, CheckCircle } from "lucide-react"
+import { X, User, Phone, MapPin, StickyNote, ShoppingBag, CheckCircle, Building2, Mail } from "lucide-react"
 import type { CartItem } from "@/types/cart.type"
+import type { CreateOrderCustomerInfo } from "@/hooks/useOrders"
+import { useAddress } from "@/components/address/AddressContext"
+import { useAuthStore } from "@/stores/authStore"
 
 interface CheckoutModalProps {
   isOpen: boolean
   onClose: () => void
   cartItems: CartItem[]
-  onCreateOrder: (cartItems: CartItem[], customerInfo: {
-    name: string
-    phone: string
-    address: string
-    notes?: string
-  }) => string
+  onCreateOrder: (cartItems: CartItem[], customerInfo: CreateOrderCustomerInfo) => string
   onClearCart: () => void
 }
 
@@ -25,12 +23,22 @@ export default function CheckoutModal({
   onCreateOrder, 
   onClearCart 
 }: CheckoutModalProps) {
+  const { address } = useAddress()
+  const currentUser = useAuthStore((state) => state.user)
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     phone: "",
     address: "",
     notes: ""
   })
+  const [requestInvoice, setRequestInvoice] = useState(false)
+  const [invoiceInfo, setInvoiceInfo] = useState({
+    companyName: "",
+    companyAddress: "",
+    taxCode: "",
+    email: ""
+  })
+  const [agreedPolicy, setAgreedPolicy] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [orderId, setOrderId] = useState("")
@@ -43,11 +51,52 @@ export default function CheckoutModal({
     return new Intl.NumberFormat("vi-VN").format(price) + " ₫"
   }
 
+  // Tự động điền thông tin khách hàng khi mở modal
+  useEffect(() => {
+    if (!isOpen) return
+
+    // Ưu tiên địa chỉ mặc định từ AddressContext nếu có
+    if (address) {
+      const fullAddress = [address.street, address.ward, address.district, address.province]
+        .filter(Boolean)
+        .join(", ")
+
+      setCustomerInfo((prev) => ({
+        ...prev,
+        name: address.recipient || currentUser?.name || "",
+        phone: address.phone || currentUser?.phone || currentUser?.phoneNumber || "",
+        address: fullAddress
+      }))
+      return
+    }
+
+    // Fallback: chỉ có thông tin từ tài khoản
+    if (currentUser) {
+      setCustomerInfo((prev) => ({
+        ...prev,
+        name: currentUser.name || prev.name,
+        phone: currentUser.phone || currentUser.phoneNumber || prev.phone
+      }))
+    }
+  }, [isOpen, address, currentUser])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
       alert("Vui lòng điền đầy đủ thông tin!")
+      return
+    }
+
+    if (requestInvoice) {
+      if (!invoiceInfo.companyName || !invoiceInfo.companyAddress || !invoiceInfo.taxCode || !invoiceInfo.email) {
+        alert("Vui lòng điền đầy đủ thông tin xuất hóa đơn công ty!")
+        return
+      }
+    }
+
+    if (!agreedPolicy) {
+      alert("Vui lòng đồng ý với chính sách xử lý dữ liệu cá nhân và chính sách đổi trả, hoàn tiền.")
       return
     }
 
@@ -57,7 +106,14 @@ export default function CheckoutModal({
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      const newOrderId = onCreateOrder(cartItems, customerInfo)
+      const newOrderId = onCreateOrder(cartItems, {
+        ...customerInfo,
+        requestInvoice,
+        invoiceCompanyName: invoiceInfo.companyName,
+        invoiceCompanyAddress: invoiceInfo.companyAddress,
+        invoiceTaxCode: invoiceInfo.taxCode,
+        invoiceEmail: invoiceInfo.email
+      })
       setOrderId(newOrderId)
       setIsSuccess(true)
       onClearCart()
@@ -73,6 +129,9 @@ export default function CheckoutModal({
     setIsSuccess(false)
     setOrderId("")
     setCustomerInfo({ name: "", phone: "", address: "", notes: "" })
+    setInvoiceInfo({ companyName: "", companyAddress: "", taxCode: "", email: "" })
+    setRequestInvoice(false)
+    setAgreedPolicy(false)
     onClose()
   }
 
@@ -194,6 +253,94 @@ export default function CheckoutModal({
                       rows={2}
                     />
                   </div>
+
+                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/80 space-y-4">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                      <input
+                        type="checkbox"
+                        checked={requestInvoice}
+                        onChange={(e) => setRequestInvoice(e.target.checked)}
+                        className="w-4 h-4 text-[#007E42] rounded border-gray-300 focus:ring-[#007E42]"
+                      />
+                      Xuất hóa đơn công ty
+                    </label>
+
+                    {requestInvoice && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="sm:col-span-2">
+                          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1">
+                            <Building2 className="w-4 h-4 text-[#007E42]" />
+                            Tên công ty *
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceInfo.companyName}
+                            onChange={(e) => setInvoiceInfo((prev) => ({ ...prev, companyName: e.target.value }))}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#007E42] focus:border-[#007E42] transition-all outline-none text-sm"
+                            placeholder="Nhập tên công ty"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1">
+                            <MapPin className="w-4 h-4 text-[#007E42]" />
+                            Địa chỉ công ty *
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceInfo.companyAddress}
+                            onChange={(e) => setInvoiceInfo((prev) => ({ ...prev, companyAddress: e.target.value }))}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#007E42] focus:border-[#007E42] transition-all outline-none text-sm"
+                            placeholder="Nhập địa chỉ công ty"
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1">
+                            <StickyNote className="w-4 h-4 text-[#007E42]" />
+                            Mã số thuế *
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceInfo.taxCode}
+                            onChange={(e) => setInvoiceInfo((prev) => ({ ...prev, taxCode: e.target.value }))}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#007E42] focus:border-[#007E42] transition-all outline-none text-sm"
+                            placeholder="Nhập mã số thuế"
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 text-xs font-medium text-gray-600 mb-1">
+                            <Mail className="w-4 h-4 text-[#007E42]" />
+                            Email nhận hóa đơn *
+                          </label>
+                          <input
+                            type="email"
+                            value={invoiceInfo.email}
+                            onChange={(e) => setInvoiceInfo((prev) => ({ ...prev, email: e.target.value }))}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-[#007E42] focus:border-[#007E42] transition-all outline-none text-sm"
+                            placeholder="Nhập email nhận hóa đơn"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="flex items-start gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={agreedPolicy}
+                      onChange={(e) => setAgreedPolicy(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 text-[#007E42] rounded border-gray-300 focus:ring-[#007E42]"
+                    />
+                    <span>
+                      Tôi đồng ý với{" "}
+                      <a href="#" className="text-[#007E42] font-medium hover:underline">
+                        Chính sách xử lý dữ liệu cá nhân
+                      </a>{" "}
+                      và{" "}
+                      <a href="#" className="text-[#007E42] font-medium hover:underline">
+                        Chính sách đổi trả, hoàn tiền
+                      </a>.
+                    </span>
+                  </label>
                 </div>
 
                 {/* Action Buttons */}

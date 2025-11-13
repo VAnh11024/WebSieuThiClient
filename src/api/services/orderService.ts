@@ -1,5 +1,6 @@
 import api from "../axiosConfig";
 import type { Order, OrderItem } from "@/types/order";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/constants";
 
 /**
  * Backend Order format (từ API)
@@ -47,6 +48,14 @@ interface BackendOrder {
   payment_status?: "pending" | "paid" | "failed";
   created_at?: string;
   updated_at?: string;
+  is_company_invoice?: boolean;
+  invoice_info?: {
+    company_name?: string;
+    company_address?: string;
+    tax_code?: string;
+    email?: string;
+  } | null;
+  notes?: string;
 }
 
 /**
@@ -79,7 +88,7 @@ class OrderService {
       name: product?.name || "Sản phẩm",
       price: item.unit_price || product?.final_price || product?.unit_price || 0,
       quantity: item.quantity,
-      image: product?.image_primary || "",
+      image: product?.image_primary || PRODUCT_PLACEHOLDER_IMAGE,
       unit: product?.unit_price ? "1 sản phẩm" : "1 sản phẩm", // Backend không có unit trong product
     };
   }
@@ -116,7 +125,16 @@ class OrderService {
       total_amount: order.total || order.subtotal || 0,
       status: frontendStatus,
       created_at: order.created_at || new Date().toISOString(),
-      notes: undefined,
+      notes: order.notes,
+      is_company_invoice: !!order.is_company_invoice,
+      invoice_info: order.is_company_invoice && order.invoice_info
+        ? {
+            company_name: order.invoice_info.company_name || "",
+            company_address: order.invoice_info.company_address || "",
+            tax_code: order.invoice_info.tax_code || "",
+            email: order.invoice_info.email || "",
+          }
+        : null,
     };
   }
 
@@ -130,8 +148,6 @@ class OrderService {
       
       // Transform data từ backend format sang frontend format
       const transformed = (response.data || []).map(order => this.transformOrder(order));
-      
-      console.log(`[OrderService] Fetched ${transformed.length} orders`);
       return transformed;
     } catch (error: any) {
       console.error(`[OrderService] Error fetching orders:`, error);
@@ -157,10 +173,17 @@ class OrderService {
    * Hủy đơn hàng
    * Backend chưa có endpoint cancel, sẽ throw error để hook xử lý local update
    */
-  async cancelOrder(orderId: string): Promise<Order> {
-    // Backend chưa có endpoint cancel order
-    // Có thể thêm sau: PATCH /orders/:id/cancel hoặc PATCH /orders/:id với body { status: 'cancelled' }
-    throw new Error("Cancel order endpoint not implemented in backend");
+  async cancelOrder(orderId: string, cancelReason?: string): Promise<Order> {
+    try {
+      const response = await api.patch<BackendOrder>(
+        `${this.basePath}/${orderId}/cancel`,
+        cancelReason ? { cancel_reason: cancelReason } : {}
+      );
+      return this.transformOrder(response.data);
+    } catch (error: any) {
+      console.error(`[OrderService] Error cancelling order ${orderId}:`, error);
+      throw error;
+    }
   }
 }
 

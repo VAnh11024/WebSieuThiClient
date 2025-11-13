@@ -25,7 +25,6 @@ export function CategoryNav({
   // Update categories khi propCategories thay đổi
   useEffect(() => {
     if (propCategories) {
-      console.log("CategoryNav: propCategories changed", propCategories);
       setCategories(propCategories);
       setLoading(false);
     } else {
@@ -51,11 +50,7 @@ export function CategoryNav({
       fetchCategories();
     }
   }, [propCategories]);
-  
-  // Log khi categories state thay đổi
-  useEffect(() => {
-    console.log("CategoryNav: categories state changed", categories);
-  }, [categories]);
+
   const checkScroll = () => {
     const container = scrollContainerRef.current;
     if (container) {

@@ -8,6 +8,13 @@ export interface OrderItem {
   unit: string
 }
 
+export interface OrderInvoiceInfo {
+  company_name: string
+  company_address: string
+  tax_code: string
+  email: string
+}
+
 export interface Order {
   id: string
   _id?: string // Backend field
@@ -19,4 +26,6 @@ export interface Order {
   status: "pending" | "confirmed" | "rejected" | "cancelled" | "delivered"
   created_at: string
   notes?: string
+  is_company_invoice?: boolean
+  invoice_info?: OrderInvoiceInfo | null
 }

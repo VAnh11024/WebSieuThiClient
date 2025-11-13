@@ -1,7 +1,3 @@
-/**
- * Product type - Khớp với Backend Schema
- * Mapping từ MongoDB Product schema
- */
 export interface Product {
   _id?: string; // MongoDB ObjectId (được convert sang string)
   id?: string; // Alias cho _id để tương thích

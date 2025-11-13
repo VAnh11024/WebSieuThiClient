@@ -39,11 +39,8 @@ export default function CategoryProductsSection({
         if (mounted) setProducts(data);
         
         // Fetch banners cho category này
-        try {
-          console.log(`[CategoryProductsSection] Fetching banners for category: "${categorySlug}" (title: "${title}")`);
+        try {          
           const banners = await bannerService.getBanners(categorySlug);
-          console.log(`[CategoryProductsSection] Received banners for "${categorySlug}":`, banners);
-          
           if (mounted) {
             // Đảm bảo banners là array và có dữ liệu hợp lệ
             if (Array.isArray(banners) && banners.length > 0) {
@@ -53,7 +50,6 @@ export default function CategoryProductsSection({
               );
               
               if (validBanners.length > 0) {
-                console.log(`[CategoryProductsSection] Setting ${validBanners.length} valid banners for "${categorySlug}"`);
                 setCategoryBanners(validBanners);
               } else {
                 console.warn(`[CategoryProductsSection] No valid banners (with image) for category: "${categorySlug}"`);
@@ -85,17 +81,6 @@ export default function CategoryProductsSection({
       mounted = false;
     };
   }, [categorySlug, isPromotion, page, limit]);
-
-  // Debug log để kiểm tra banner state
-  useEffect(() => {
-    if (!loading) {
-      console.log(`[CategoryProductsSection] Render for "${title}" (slug: "${categorySlug}"):`, {
-        bannersCount: categoryBanners.length,
-        hasBanners: categoryBanners.length > 0,
-        banners: categoryBanners,
-      });
-    }
-  }, [categoryBanners, title, categorySlug, loading]);
 
   if (loading) {
     return (
