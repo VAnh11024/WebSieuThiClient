@@ -100,15 +100,23 @@ class OrderService {
     const address = typeof order.address_id === 'object' ? order.address_id : null;
     
     // Map status từ backend sang frontend
-    let frontendStatus: Order["status"] = "pending";
-    if (order.status === "delivered") {
-      frontendStatus = "delivered";
-    } else if (order.status === "cancelled") {
-      frontendStatus = "cancelled";
-    } else if (order.status === "confirmed" || order.status === "shipped") {
-      frontendStatus = "confirmed";
-    } else {
-      frontendStatus = "pending";
+    let frontendStatus: Order["status"];
+    switch (order.status) {
+      case "delivered":
+        frontendStatus = "delivered";
+        break;
+      case "cancelled":
+        frontendStatus = "cancelled";
+        break;
+      case "confirmed":
+        frontendStatus = "confirmed";
+        break;
+      case "shipped":
+        frontendStatus = "shipped";
+        break;
+      default:
+        frontendStatus = "pending";
+        break;
     }
 
     return {
@@ -182,6 +190,98 @@ class OrderService {
       return this.transformOrder(response.data);
     } catch (error: any) {
       console.error(`[OrderService] Error cancelling order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Staff/Admin: Lấy danh sách tất cả đơn hàng
+   * GET /orders/admin/all
+   */
+  async getStaffOrders(params?: { status?: string; page?: number; limit?: number }): Promise<{
+    orders: Order[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const response = await api.get<{
+        orders?: BackendOrder[];
+        total?: number;
+        page?: number;
+        totalPages?: number;
+      }>(`${this.basePath}/admin/all`, {
+        params: {
+          status: params?.status,
+          page: params?.page,
+          limit: params?.limit,
+        },
+      });
+
+      const backendOrders = response.data?.orders ?? [];
+      return {
+        orders: backendOrders.map((order) => this.transformOrder(order)),
+        total: response.data?.total ?? backendOrders.length,
+        page: response.data?.page ?? params?.page ?? 1,
+        totalPages: response.data?.totalPages ?? 1,
+      };
+    } catch (error: any) {
+      console.error(`[OrderService] Error fetching staff orders:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Staff/Admin: Xác nhận đơn hàng
+   */
+  async confirmOrderByStaff(orderId: string): Promise<Order> {
+    try {
+      const response = await api.patch<BackendOrder>(`${this.basePath}/admin/${orderId}/confirm`);
+      return this.transformOrder(response.data);
+    } catch (error: any) {
+      console.error(`[OrderService] Error confirming order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Staff/Admin: Cập nhật trạng thái đang giao
+   */
+  async shipOrder(orderId: string): Promise<Order> {
+    try {
+      const response = await api.patch<BackendOrder>(`${this.basePath}/admin/${orderId}/ship`);
+      return this.transformOrder(response.data);
+    } catch (error: any) {
+      console.error(`[OrderService] Error shipping order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Staff/Admin: Xác nhận giao hàng thành công
+   */
+  async deliverOrderByStaff(orderId: string): Promise<Order> {
+    try {
+      const response = await api.patch<BackendOrder>(`${this.basePath}/admin/${orderId}/deliver`);
+      return this.transformOrder(response.data);
+    } catch (error: any) {
+      console.error(`[OrderService] Error delivering order ${orderId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Staff/Admin: Hủy đơn hàng
+   */
+  async cancelOrderByStaff(orderId: string, cancelReason?: string): Promise<Order> {
+    try {
+      const response = await api.patch<BackendOrder>(
+        `${this.basePath}/admin/${orderId}/cancel`,
+        { cancel_reason: cancelReason ?? 'Cancelled by staff' },
+      );
+      return this.transformOrder(response.data);
+    } catch (error: any) {
+      console.error(`[OrderService] Error cancelling order ${orderId} by staff:`, error);
       throw error;
     }
   }

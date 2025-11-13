@@ -22,6 +22,7 @@ import OrdersPage from "@/pages/order-management";
 import CustomerOrdersPage from "@/pages/customer-orders";
 import KhuyenMaiPage from "@/pages/sale";
 import AccountPage from "@/pages/account";
+import SearchPage from "@/pages/search";
 import { ProtectedRoute, PublicRoute, AdminRoute, StaffRoute } from "@/components/auth/ProtectedRoute";
 
 const router: RouteObject[] = [
@@ -33,6 +34,10 @@ const router: RouteObject[] = [
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: "/search",
+        element: <SearchPage />,
       },
       {
         path: "/products",

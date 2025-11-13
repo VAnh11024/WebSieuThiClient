@@ -26,11 +26,23 @@ export function useOrders() {
 
   // Lấy userId từ cả id và _id (tránh case backend trả về _id)
   const userId = (user as any)?.id || (user as any)?._id
+  const role = (user as any)?.role?.toLowerCase?.()
+  const isStaff = role === "staff" || role === "admin"
+
+  const replaceOrderInState = useCallback((updatedOrder: Order) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) => {
+        const orderId = order.id || order._id
+        const updatedId = updatedOrder.id || updatedOrder._id
+        return orderId === updatedId ? updatedOrder : order
+      })
+    )
+  }, [])
 
   // Fetch orders từ API khi user đăng nhập
   useEffect(() => {
     const fetchOrders = async () => {
-      if (!isAuthenticated || !userId) {
+      if (!isAuthenticated || (!userId && !isStaff)) {
         setLoading(false)
         setOrders([])
         return
@@ -39,8 +51,13 @@ export function useOrders() {
       try {
         setLoading(true)
         setError(null)
-        const fetchedOrders = await orderService.getMyOrders()
-        setOrders(fetchedOrders)
+        if (isStaff) {
+          const { orders: staffOrders } = await orderService.getStaffOrders()
+          setOrders(staffOrders)
+        } else {
+          const fetchedOrders = await orderService.getMyOrders()
+          setOrders(fetchedOrders)
+        }
       } catch (err: any) {
         console.error("Error fetching orders:", err)
         setError(err?.response?.data?.message || "Không thể tải danh sách đơn hàng")
@@ -51,17 +68,20 @@ export function useOrders() {
     }
 
     fetchOrders()
-  }, [isAuthenticated, userId])
+  }, [isAuthenticated, userId, isStaff])
 
-  const confirmOrder = useCallback((orderId: string) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => 
-        order.id === orderId 
-          ? { ...order, status: "confirmed" as const } 
-          : order
+  const confirmOrder = useCallback(async (orderId: string) => {
+    if (isStaff) {
+      const updatedOrder = await orderService.confirmOrderByStaff(orderId)
+      replaceOrderInState(updatedOrder)
+    } else {
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.id === orderId ? { ...order, status: "confirmed" } : order
+        )
       )
-    )
-  }, [])
+    }
+  }, [isStaff, replaceOrderInState])
 
   const rejectOrder = useCallback((orderId: string) => {
     setOrders((prevOrders) =>
@@ -73,33 +93,33 @@ export function useOrders() {
     )
   }, [])
 
-  const deliverOrder = useCallback((orderId: string) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => 
-        order.id === orderId 
-          ? { ...order, status: "delivered" as const } 
-          : order
-      )
-    )
-  }, [])
-
-  const cancelOrder = useCallback(async (orderId: string) => {
-    try {
-      // Thử gọi API cancel order
-      const updatedOrder = await orderService.cancelOrder(orderId)
+  const deliverOrder = useCallback(async (orderId: string) => {
+    if (isStaff) {
+      // Backend yêu cầu trạng thái shipped trước khi delivered
+      const shippedOrder = await orderService.shipOrder(orderId)
+      replaceOrderInState(shippedOrder)
+      const deliveredOrder = await orderService.deliverOrderByStaff(orderId)
+      replaceOrderInState(deliveredOrder)
+    } else {
       setOrders((prevOrders) =>
-        prevOrders.map((order) => 
-          order.id === orderId 
-            ? updatedOrder
-            : order
+        prevOrders.map((order) =>
+          order.id === orderId ? { ...order, status: "delivered" } : order
         )
       )
-    } catch (err: any) {
-      const message = err?.response?.data?.message || "Không thể hủy đơn hàng. Vui lòng thử lại."
-      console.error("Cancel order failed:", err)
-      alert(message)
     }
-  }, [])
+  }, [isStaff, replaceOrderInState])
+
+  const cancelOrder = useCallback(async (orderId: string, reason?: string) => {
+    try {
+      const updatedOrder = isStaff
+        ? await orderService.cancelOrderByStaff(orderId, reason)
+        : await orderService.cancelOrder(orderId, reason)
+      replaceOrderInState(updatedOrder)
+    } catch (err: any) {
+      console.error("Cancel order failed:", err)
+      throw err
+    }
+  }, [isStaff, replaceOrderInState])
 
   // Tạo đơn hàng mới từ giỏ hàng
   const createOrder = useCallback((

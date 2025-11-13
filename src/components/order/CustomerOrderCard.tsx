@@ -57,21 +57,34 @@ export function CustomerOrderCard({ order, onCancelOrder }: CustomerOrderCardPro
   const canCancel = order.status === "pending";
 
   // Nhãn trạng thái
-  const getStatusLabel = (status: Order["status"]) => {
-    switch (status) {
-      case "pending":
-        return "Chờ xác nhận";
-      case "confirmed":
-        return "Đã xác nhận";
-      case "delivered":
-        return "Đã giao hàng";
-      case "rejected":
-        return "Đã từ chối";
-      case "cancelled":
-        return "Đã hủy";
-      default:
-        return status;
-    }
+  const statusConfig: Record<
+    Order["status"],
+    { label: string; className: string }
+  > = {
+    pending: {
+      label: "Chờ xác nhận",
+      className: "bg-yellow-100 text-yellow-700",
+    },
+    confirmed: {
+      label: "Đã xác nhận",
+      className: "bg-blue-100 text-blue-700",
+    },
+    shipped: {
+      label: "Đang giao hàng",
+      className: "bg-cyan-100 text-cyan-700",
+    },
+    delivered: {
+      label: "Đã giao hàng",
+      className: "bg-green-100 text-green-700",
+    },
+    rejected: {
+      label: "Đã từ chối",
+      className: "bg-red-100 text-red-700",
+    },
+    cancelled: {
+      label: "Đã hủy",
+      className: "bg-red-100 text-red-700",
+    },
   };
 
   return (
@@ -85,20 +98,8 @@ export function CustomerOrderCard({ order, onCancelOrder }: CustomerOrderCardPro
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium ${
-              order.status === "delivered"
-                ? "bg-green-100 text-green-700"
-                : order.status === "pending"
-                ? "bg-yellow-100 text-yellow-700"
-                : order.status === "confirmed"
-                ? "bg-blue-100 text-blue-700"
-                : order.status === "cancelled" || order.status === "rejected"
-                ? "bg-red-100 text-red-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {getStatusLabel(order.status)}
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig[order.status]?.className ?? "bg-gray-100 text-gray-700"}`}>
+            {statusConfig[order.status]?.label ?? order.status}
           </span>
 
         </div>
