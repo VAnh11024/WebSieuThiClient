@@ -389,6 +389,12 @@ export function Navbar() {
                       <div className="px-2 py-1">
                         <DropdownMenuItem 
                           onClick={async () => {
+                            // Xóa cart của user hiện tại trước khi logout
+                            if (currentUser?.id && typeof window !== "undefined") {
+                              localStorage.removeItem(`cart_${currentUser.id}`);
+                            }
+                            localStorage.removeItem("cart_guest");
+                            
                             await authService.logout();
                             clearAuth();
                             // Dispatch event để notify các components khác
