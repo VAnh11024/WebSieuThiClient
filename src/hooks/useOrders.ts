@@ -6,16 +6,31 @@ import type { CartItem } from "@/types/cart.type"
 import { orderService } from "@/api"
 import { useAuthStore } from "@/stores/authStore"
 
+export interface CreateOrderCustomerInfo {
+  name: string
+  phone: string
+  address: string
+  notes?: string
+  requestInvoice?: boolean
+  invoiceCompanyName?: string
+  invoiceCompanyAddress?: string
+  invoiceTaxCode?: string
+  invoiceEmail?: string
+}
+
 export function useOrders() {
   const { user, isAuthenticated } = useAuthStore()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Lấy userId từ cả id và _id (tránh case backend trả về _id)
+  const userId = (user as any)?.id || (user as any)?._id
+
   // Fetch orders từ API khi user đăng nhập
   useEffect(() => {
     const fetchOrders = async () => {
-      if (!isAuthenticated || !user?.id) {
+      if (!isAuthenticated || !userId) {
         setLoading(false)
         setOrders([])
         return
@@ -36,7 +51,7 @@ export function useOrders() {
     }
 
     fetchOrders()
-  }, [isAuthenticated, user?.id])
+  }, [isAuthenticated, userId])
 
   const confirmOrder = useCallback((orderId: string) => {
     setOrders((prevOrders) =>
@@ -79,29 +94,32 @@ export function useOrders() {
             : order
         )
       )
-    } catch (err) {
-      // Nếu API chưa có, update local state
-      console.warn("Cancel order API not available, updating local state")
-      setOrders((prevOrders) =>
-        prevOrders.map((order) => 
-          order.id === orderId 
-            ? { ...order, status: "cancelled" as const } 
-            : order
-        )
-      )
+    } catch (err: any) {
+      const message = err?.response?.data?.message || "Không thể hủy đơn hàng. Vui lòng thử lại."
+      console.error("Cancel order failed:", err)
+      alert(message)
     }
   }, [])
 
   // Tạo đơn hàng mới từ giỏ hàng
   const createOrder = useCallback((
     cartItems: CartItem[], 
-    customerInfo: {
-      name: string
-      phone: string
-      address: string
-      notes?: string
-    }
+    customerInfo: CreateOrderCustomerInfo
   ) => {
+    const invoiceNotes = customerInfo.requestInvoice
+      ? [
+          `Xuất hóa đơn công ty`,
+          customerInfo.invoiceCompanyName && `Tên công ty: ${customerInfo.invoiceCompanyName}`,
+          customerInfo.invoiceCompanyAddress && `Địa chỉ: ${customerInfo.invoiceCompanyAddress}`,
+          customerInfo.invoiceTaxCode && `Mã số thuế: ${customerInfo.invoiceTaxCode}`,
+          customerInfo.invoiceEmail && `Email: ${customerInfo.invoiceEmail}`,
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      : ""
+
+    const combinedNotes = [customerInfo.notes, invoiceNotes].filter(Boolean).join(" | ")
+
     const newOrder: Order = {
       id: `ORD-${Date.now()}`,
       customer_name: customerInfo.name,
@@ -119,7 +137,16 @@ export function useOrders() {
       total_amount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
       status: "pending",
       created_at: new Date().toISOString(),
-      notes: customerInfo.notes
+      notes: combinedNotes || undefined,
+      is_company_invoice: customerInfo.requestInvoice || false,
+      invoice_info: customerInfo.requestInvoice
+        ? {
+            company_name: customerInfo.invoiceCompanyName || "",
+            company_address: customerInfo.invoiceCompanyAddress || "",
+            tax_code: customerInfo.invoiceTaxCode || "",
+            email: customerInfo.invoiceEmail || "",
+          }
+        : null
     }
 
     setOrders((prevOrders) => [newOrder, ...prevOrders])

@@ -26,23 +26,46 @@ export function Navbar() {
   const { user: currentUser, isAuthenticated, setUser, logout: clearAuth } = useAuthStore();
 
   useEffect(() => {
+    let isMounted = true;
+
     // Kiểm tra và đồng bộ auth state khi component mount
     const checkAuth = async () => {
       const isAuth = authService.isAuthenticated();
-      if (isAuth && !currentUser) {
-        // Nếu có token nhưng chưa có user trong store, lấy thông tin user
-        try {
-          const user = await authService.getMe();
-          setUser(user);
-        } catch (error) {
-          console.error('Failed to get user info:', error);
-          // Nếu lỗi, xóa auth data
+
+      if (!isAuth) {
+        if (currentUser) {
+          clearAuth();
+        }
+        return;
+      }
+
+      try {
+        // Đồng bộ tạm thời bằng dữ liệu localStorage (nếu có)
+        const cachedUser = authService.getCurrentUser();
+        if (cachedUser && (!currentUser || currentUser.id !== cachedUser.id)) {
+          setUser(cachedUser);
+        }
+
+        // Luôn gọi getMe để lấy dữ liệu mới nhất (avatar, tên, ...)
+        const freshUser = await authService.getMe();
+        if (!isMounted) return;
+
+        const hasChanged =
+          !currentUser ||
+          currentUser.id !== freshUser.id ||
+          currentUser.avatar !== freshUser.avatar ||
+          currentUser.name !== freshUser.name ||
+          currentUser.gender !== freshUser.gender;
+
+        if (hasChanged) {
+          setUser(freshUser);
+        }
+      } catch (error) {
+        console.error("Failed to get user info:", error);
+        if (isMounted) {
           clearAuth();
           authService.clearAuthData();
         }
-      } else if (!isAuth && currentUser) {
-        // Nếu không có token nhưng vẫn có user trong store, xóa user
-        clearAuth();
       }
     };
 
@@ -62,6 +85,7 @@ export function Navbar() {
     window.addEventListener('auth-changed', handleAuthChanged);
     
     return () => {
+      isMounted = false;
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('auth-changed', handleAuthChanged);
     };

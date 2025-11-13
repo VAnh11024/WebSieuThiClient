@@ -54,7 +54,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Product Image - Fixed Height */}
         <div
-          className="relative overflow-hidden cursor-pointer w-full h-44 flex-shrink-0 bg-gray-100 flex items-center justify-center p-2"
+          className="relative overflow-hidden cursor-pointer w-full h-44 flex-shrink-0 bg-gray-100"
           onClick={() => {
             if (productId) {
               navigate(`/products-detail/${productId}`);
@@ -64,7 +64,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           <img
             src={imageUrl}
             alt={product.name}
-            className="max-w-full max-h-full w-auto h-auto object-contain transition-transform duration-500 group-hover:scale-110"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
             onError={() => {
               // Khi ảnh load lỗi, fallback về placeholder
               setImageError(true);

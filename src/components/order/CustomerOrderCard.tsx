@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { Order } from "@/types/order";
 import { useCart } from "@/components/cart/CartContext";
+import { PRODUCT_PLACEHOLDER_IMAGE } from "@/lib/constants";
 
 interface CustomerOrderCardProps {
   order: Order;
@@ -106,11 +107,17 @@ export function CustomerOrderCard({ order, onCancelOrder }: CustomerOrderCardPro
       {/* Product Images */}
       <div className="p-4">
         <div className="flex items-center gap-3">
-          {visibleProducts.map((item) => (
+          {visibleProducts.map((item) => {
+            const rawImage = item.image;
+            const normalizedImage =
+              typeof rawImage === "string" ? rawImage.trim() : "";
+            const imageSrc =
+              normalizedImage !== "" ? normalizedImage : PRODUCT_PLACEHOLDER_IMAGE;
+            return (
             <div key={item.id} className="relative">
               <div className="w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-white">
                 <img
-                  src={item.image}
+                  src={imageSrc}
                   alt={item.name}
                   className="w-full h-full object-cover"
                 />
@@ -122,7 +129,7 @@ export function CustomerOrderCard({ order, onCancelOrder }: CustomerOrderCardPro
                 </div>
               )}
             </div>
-          ))}
+          )})}
           
           {/* +N nếu còn nhiều sản phẩm */}
           {!showAllProducts && remainingCount > 0 && (

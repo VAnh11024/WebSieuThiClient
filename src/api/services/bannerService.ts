@@ -45,24 +45,11 @@ class BannerService {
       const url = categorySlug 
         ? `${this.basePath}?category=${encodeURIComponent(categorySlug)}`
         : this.basePath;
-      
-      console.log(`[BannerService] Fetching banners from: ${url}`);
-      
       const response = await api.get<any[]>(url);
-      
-      console.log(`[BannerService] Raw response for category "${categorySlug || 'all'}":`, {
-        status: response.status,
-        dataLength: response.data?.length || 0,
-        data: response.data,
-      });
-      
       // Transform data từ backend format sang frontend format
       const transformed = (response.data || [])
         .map((banner) => this.transformBanner(banner))
         .filter((banner) => banner !== null); // Lọc bỏ các banner không hợp lệ
-      
-      console.log(`[BannerService] Transformed ${transformed.length} banners for category: ${categorySlug || 'all'}`, transformed);
-      
       if (categorySlug && transformed.length === 0) {
         console.warn(`[BannerService] ⚠️ No banners found for category slug: "${categorySlug}"`);
         console.warn(`[BannerService] This might mean:`);

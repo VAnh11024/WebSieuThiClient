@@ -71,7 +71,10 @@ export default function CartWithItems({ items, onUpdateQuantity, onRemoveItem, o
               
               {/* Cart Items List */}
               <div className="divide-y divide-gray-100">
-                {items.map((item, index) => (
+                {items.map((item, index) => {
+                  const normalizedImage = typeof item.image === "string" ? item.image.trim() : ""
+                  const imageSrc = normalizedImage !== "" ? normalizedImage : PRODUCT_PLACEHOLDER_IMAGE
+                  return (
                   <div 
                     key={item.id} 
                     className="p-4 flex gap-4 hover:bg-gradient-to-r hover:from-green-50/30 hover:to-transparent transition-all duration-300 group"
@@ -80,7 +83,7 @@ export default function CartWithItems({ items, onUpdateQuantity, onRemoveItem, o
                     {/* Product Image */}
                     <div className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 shadow-md group-hover:shadow-xl transition-shadow duration-300 ring-2 ring-gray-100 group-hover:ring-[#007E42]/20">
                       <img
-                        src={item.image || PRODUCT_PLACEHOLDER_IMAGE}
+                        src={imageSrc}
                         alt={item.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
@@ -133,7 +136,7 @@ export default function CartWithItems({ items, onUpdateQuantity, onRemoveItem, o
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             </div>
           </div>
