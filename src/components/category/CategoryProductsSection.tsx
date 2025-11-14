@@ -111,7 +111,7 @@ export default function CategoryProductsSection({
 
   return (
     <>
-      {/* Banners bên trên mỗi section - Dùng dữ liệu mẫu */}
+      {/* Hiển thị banners trả về từ API (nếu có) */}
       {categoryBanners.length > 0 && (
         <div className="mb-1 sm:mb-2">
           <Banners banners={categoryBanners} />

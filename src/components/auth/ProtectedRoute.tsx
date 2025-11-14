@@ -11,10 +11,15 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
   const isAuth = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
 
   if (!isAuth) {
     // Redirect đến login, lưu lại trang hiện tại để redirect sau khi login
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (currentUser?.role === "staff") {
+    return <Navigate to="/staff/orders" replace />;
   }
 
   return children;
@@ -25,10 +30,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
  */
 export function PublicRoute({ children }: ProtectedRouteProps) {
   const isAuth = authService.isAuthenticated();
+  const currentUser = authService.getCurrentUser();
 
   if (isAuth) {
     // Nếu đã login, redirect về home
-    return <Navigate to="/" replace />;
+    const destination = currentUser?.role === "staff" ? "/staff/orders" : "/";
+    return <Navigate to={destination} replace />;
   }
 
   return children;

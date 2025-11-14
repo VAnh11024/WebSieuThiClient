@@ -481,49 +481,6 @@ export const spicesData = [
   },
 ];
 
-// Dữ liệu mẫu cho banner chính
-export const mainBanners: Banner[] = [
-  {
-    id: 1,
-    name: "Banner chính 1",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc_202510091649049889.jpg",
-    link_url: "/",
-  },
-  {
-    id: 2,
-    name: "Banner chính 2",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc-1_202508190846166252.jpg",
-    link_url: "/",
-  },
-  {
-    id: 3,
-    name: "Banner chính 3",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/trang-cate-pc202507042338493733_202508121546495641.jpg",
-    link_url: "/",
-  },
-];
-
-// Dữ liệu mẫu cho banner phụ (giữa các danh mục)
-export const categoryBanners: Banner[] = [
-  {
-    id: 4,
-    name: "Banner danh mục 1",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc_202510091649049889.jpg",
-    link_url: "/",
-  },
-  {
-    id: 5,
-    name: "Banner danh mục 2",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc-1_202508190846166252.jpg",
-    link_url: "/",
-  },
-];
-
 // Dữ liệu mẫu cho đơn hàng
 export const sampleOrders: Order[] = [
   {

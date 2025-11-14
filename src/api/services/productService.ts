@@ -1,6 +1,20 @@
 import api from "../axiosConfig";
 import type { Product } from "../../types";
 
+export interface SearchProductsParams {
+  skip?: number;
+  category?: string;
+  brand?: string;
+  sortOrder?: string;
+}
+
+export interface SearchProductsResponse {
+  total: number;
+  skip: number;
+  actualLimit: number;
+  products: Product[];
+}
+
 /**
  * Product Service - Xử lý các API liên quan đến sản phẩm (khớp với NestJS backend)
  */
@@ -13,7 +27,7 @@ class ProductService {
    */
   async getProducts(
     categorySlug?: string,
-    params?: { page?: number; limit?: number }
+    params?: Record<string, unknown>
   ): Promise<Product[]> {
     const response = await api.get<Product[]>(this.basePath, {
       params: {
@@ -97,6 +111,34 @@ class ProductService {
         params: { limit },
       }
     );
+    return response.data;
+  }
+
+  async searchProducts(
+    key: string,
+    params?: SearchProductsParams
+  ): Promise<SearchProductsResponse> {
+    if (!key.trim()) {
+      return {
+        total: 0,
+        skip: params?.skip ?? 0,
+        actualLimit: 0,
+        products: [],
+      };
+    }
+
+    const response = await api.get<{
+      total: number;
+      skip: number;
+      actualLimit: number;
+      products: Product[];
+    }>(`${this.basePath}/search`, {
+      params: {
+        key,
+        ...params,
+      },
+    });
+
     return response.data;
   }
 }

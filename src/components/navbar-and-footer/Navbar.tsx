@@ -1,6 +1,6 @@
 import { ChevronDown, MapPin, Search, ShoppingCart, User, Menu, X, Clock, Package, LogOut, Phone } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { CategorySidebar } from "@/components/category/CategorySideBar";
@@ -17,6 +17,7 @@ import { useNotification } from "@/components/notification/NotificationContext";
 export function Navbar() {
   const navigate = useNavigate();
   const { totalItems } = useCart();
+  const location = useLocation();
   const { searchHistory, addToHistory, removeFromHistory, clearHistory } = useSearchHistory();
   const { address, setAddress, getAddressString } = useAddress();
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -126,10 +127,31 @@ export function Navbar() {
 
   const placeholder = isFocused ? "Nhập sản phẩm cần tìm" : hints[idx];
 
+  useEffect(() => {
+    if (location.pathname === "/search") {
+      const params = new URLSearchParams(location.search);
+      const query = params.get("q") || "";
+      setValue(query);
+    }
+  }, [location]);
+
+  const navigateToSearch = (searchTerm: string) => {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) {
+      return;
+    }
+    navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+  };
+
   const handleSearch = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (value.trim()) {
-      addToHistory(value.trim());
+    const trimmed = value.trim();
+    if (trimmed) {
+      addToHistory(trimmed);
+      setShowHistory(false);
+      setIsFocused(false);
+      navigateToSearch(trimmed);
+    } else {
       setShowHistory(false);
     }
   };
@@ -138,6 +160,8 @@ export function Navbar() {
     setValue(searchTerm);
     addToHistory(searchTerm);
     setShowHistory(false);
+    setIsFocused(false);
+    navigateToSearch(searchTerm);
   };
 
   const handleRemoveHistoryItem = (e: React.MouseEvent, searchTerm: string) => {

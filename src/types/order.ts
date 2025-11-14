@@ -23,7 +23,7 @@ export interface Order {
   customer_address: string
   items: OrderItem[]
   total_amount: number
-  status: "pending" | "confirmed" | "rejected" | "cancelled" | "delivered"
+  status: "pending" | "confirmed" | "shipped" | "rejected" | "cancelled" | "delivered"
   created_at: string
   notes?: string
   is_company_invoice?: boolean

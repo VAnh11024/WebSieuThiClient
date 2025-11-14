@@ -9,62 +9,11 @@ import Article from "@/components/productPage/article/Article";
 import ProductGridWithBanners from "@/components/products/ProductGridWithBanners";
 import FilterBar from "@/components/productPage/filter/FilterBar";
 import Promotion from "@/components/productPage/promotion/Promotion";
-import { categoryService, productService } from "@/api";
+import { bannerService, categoryService, productService } from "@/api";
 import type { Category as CategoryType } from "@/types/category.type";
 import { toCategoryNav } from "@/lib/constants";
 import { useNotification } from "@/components/notification/NotificationContext";
-
-/**
- * Helper function để map product từ backend format sang frontend format
- * Backend: _id, image_primary, quantity (số)
- * Frontend: id, image_url, quantity (có thể là số hoặc string)
- */
-const mapProductFromApi = (apiProduct: any): Product => {
-  return {
-    _id: apiProduct._id,
-    id: apiProduct._id || apiProduct.id,
-    name: apiProduct.name,
-    slug: apiProduct.slug,
-    category_id: apiProduct.category_id,
-    brand_id: apiProduct.brand_id,
-    unit: apiProduct.unit,
-    unit_price: apiProduct.unit_price,
-    discount_percent: apiProduct.discount_percent || 0,
-    final_price: apiProduct.final_price || apiProduct.unit_price,
-    image_url: apiProduct.image_primary || apiProduct.image_url || "",
-    images: apiProduct.images || [],
-    quantity: apiProduct.quantity || 0,
-    stock_status: apiProduct.stock_status || "in_stock",
-    is_active: apiProduct.is_active !== false,
-    is_deleted: apiProduct.is_deleted || false,
-    created_at: apiProduct.created_at,
-    updated_at: apiProduct.updated_at,
-  };
-};
-
-const sampleBanners: Banner[] = [
-  {
-    id: 1,
-    name: "Banner 1",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc_202510091649049889.jpg",
-    link_url: "/",
-  },
-  {
-    id: 2,
-    name: "Banner 2",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc-1_202508190846166252.jpg",
-    link_url: "/",
-  },
-  {
-    id: 3,
-    name: "Banner 3",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/trang-cate-pc202507042338493733_202508121546495641.jpg",
-    link_url: "/",
-  },
-];
+import { mapProductFromApi } from "@/lib/utils/productMapper";
 
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -75,6 +24,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [currentCategory, setCurrentCategory] = useState<CategoryType | null>(null);
   const [promotionProducts, setPromotionProducts] = useState<Product[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const { showNotification } = useNotification();
 
   // Lấy category từ URL query parameter
@@ -86,6 +36,7 @@ export default function ProductsPage() {
     const loadCategoryData = async () => {
       if (!categoryFromUrl) {
         setLoading(false);
+        setBanners([]);
         return;
       }
 
@@ -233,11 +184,15 @@ export default function ProductsPage() {
           // Không throw error để không block việc load products
         }
 
-        // 4. Lấy products theo category slug (không block bởi categories)
+        // 4. Lấy banners cho category hiện tại
+        console.log("=== Fetching banners for category ===");
+        await fetchBanners(categoryFromUrl);
+
+        // 5. Lấy products theo category slug (không block bởi categories)
         console.log("=== Fetching products ===");
         await fetchProductsByCategory(categoryFromUrl);
         
-        // 5. Lấy promotion products
+        // 6. Lấy promotion products
         console.log("=== Fetching promotion products ===");
         await fetchPromotionProducts(categoryFromUrl);
 
@@ -261,6 +216,7 @@ export default function ProductsPage() {
         });
         setCategories([]);
         setProducts([]);
+        setBanners([]);
       } finally {
         setLoading(false);
       }
@@ -297,6 +253,24 @@ export default function ProductsPage() {
     } catch (error) {
       console.error("Error fetching products:", error);
       setProducts([]);
+    }
+  };
+
+  const fetchBanners = async (categorySlug: string) => {
+    try {
+      const categoryBanners = await bannerService.getBanners(categorySlug);
+
+      if (categoryBanners.length > 0) {
+        setBanners(categoryBanners);
+        return;
+      }
+
+      console.log("No category-specific banners found. Falling back to default banners.");
+      const defaultBanners = await bannerService.getBanners();
+      setBanners(defaultBanners);
+    } catch (error) {
+      console.error("Error fetching banners:", error);
+      setBanners([]);
     }
   };
 
@@ -382,9 +356,11 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <div className="mt-5">
-        <Banners banners={sampleBanners} />
-      </div>
+      {banners.length > 0 && (
+        <div className="mt-5">
+          <Banners banners={banners} />
+        </div>
+      )}
 
       {/* Hiển thị sản phẩm với banner xen kẽ */}
       <div className="mt-8">
@@ -392,7 +368,7 @@ export default function ProductsPage() {
           <>
             <ProductGridWithBanners
               products={products}
-              banners={sampleBanners}
+              banners={banners}
               onAddToCart={handleAddToCart}
               rowsPerBanner={2}
             />
