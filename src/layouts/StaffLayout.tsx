@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Footer } from "@/components/navbar-and-footer/Footer";
 import { ScrollToTop } from "@/components/scroll/ScrollToTop";
@@ -21,23 +21,18 @@ export default function StaffLayout() {
   // Chặn staff truy cập các trang ngoài /staff/*
   useEffect(() => {
     const checkAccess = () => {
-      // Kiểm tra đã đăng nhập chưa
       if (!authService.isAuthenticated()) {
         navigate("/login", { replace: true });
         return;
       }
 
-      // Lấy user hiện tại
       const currentUser = user || authService.getCurrentUser();
 
-      // Kiểm tra role staff
       if (currentUser?.role === "staff") {
-        // Nếu staff cố truy cập trang ngoài /staff/*, redirect về /staff/orders
         if (!location.pathname.startsWith("/staff")) {
           navigate("/staff/orders", { replace: true });
         }
       } else if (currentUser?.role !== "admin") {
-        // Nếu không phải staff và không phải admin, redirect về home
         navigate("/", { replace: true });
       }
     };
@@ -45,40 +40,76 @@ export default function StaffLayout() {
     checkAccess();
   }, [location.pathname, navigate, user]);
 
+  // Thông báo đơn hàng mới
   useEffect(() => {
-    // Lấy danh sách ID đơn hàng hiện tại
     const currentOrderIds = orders.map((order) => order.id);
 
-    // Nếu đây không phải lần đầu render
     if (previousOrdersRef.current.length > 0) {
-      // Tìm các đơn hàng mới (có trong currentOrders nhưng không có trong previousOrders)
       const newOrders = orders.filter(
         (order) =>
           !previousOrdersRef.current.includes(order.id) &&
           order.status === "pending"
       );
 
-      // Hiển thị thông báo cho mỗi đơn hàng mới
       newOrders.forEach((order) => {
         showNotification({
           type: "info",
           title: "Đơn hàng mới",
-          message: `Đơn hàng ${order.id} từ ${order.customer_name} - ${order.total_amount.toLocaleString("vi-VN")}đ`,
-          duration: 6000, // 6 giây
+          message: `Đơn hàng ${order.id} từ ${
+            order.customer_name
+          } - ${order.total_amount.toLocaleString("vi-VN")}đ`,
+          duration: 6000,
         });
       });
     }
 
-    // Cập nhật danh sách ID đơn hàng đã biết
     previousOrdersRef.current = currentOrderIds;
   }, [orders, showNotification]);
 
+  const isOrdersPage = location.pathname.startsWith("/staff/orders");
+  const isMessagesPage = location.pathname.startsWith("/staff/messages");
+
+  const handleGoOrders = () => navigate("/staff/orders");
+  const handleGoMessages = () => navigate("/staff/messages");
+
   return (
-    <div className="staff-layout w-full bg-[#e9edf0] pb-4">
+    <div className="staff-layout w-full bg-[#e9edf0] pb-4 min-h-screen">
       <ScrollToTop />
       <StaffNavbar />
-      <main className="flex flex-col w-full mx-auto px-3 overflow-hidden gap-5 mt-2">
-        <Outlet />
+
+      <main className="flex flex-col w-full mx-auto px-3 overflow-hidden gap-5 mt-2 max-w-7xl">
+        {/* Thanh nút chuyển giữa Đơn hàng / Tin nhắn */}
+        <div className="w-full">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-1 flex gap-2">
+            <button
+              onClick={handleGoOrders}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-colors
+                ${
+                  isOrdersPage
+                    ? "bg-green-600 text-white shadow-sm"
+                    : "bg-transparent text-gray-700 hover:bg-gray-100"
+                }`}
+            >
+              Đơn hàng
+            </button>
+            <button
+              onClick={handleGoMessages}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-colors
+                ${
+                  isMessagesPage
+                    ? "bg-green-600 text-white shadow-sm"
+                    : "bg-transparent text-gray-700 hover:bg-gray-100"
+                }`}
+            >
+              Tin nhắn
+            </button>
+          </div>
+        </div>
+
+        <div className="w-full">
+          <Outlet />
+        </div>
+
         <Footer />
       </main>
     </div>

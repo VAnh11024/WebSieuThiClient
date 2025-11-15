@@ -7,8 +7,8 @@ import AdminProducts from "@/pages/admin/products";
 import AdminCategories from "@/pages/admin/categories";
 import AddProductPage from "@/pages/admin/products/add";
 import EditProductPage from "@/pages/admin/products/edit/[id]";
-import AdminMessages from "@/pages/admin/messages";
-import ConversationDetailPage from "@/pages/admin/messages/detail";
+import StaffMessage from "@/pages/messages";
+import ConversationDetailPage from "@/pages/messages/detail";
 import AdminInventory from "@/pages/admin/inventory";
 import AdminInventoryHistory from "@/pages/admin/inventory/history";
 import AdminBrands from "@/pages/admin/brands";
@@ -163,10 +163,6 @@ const router: RouteObject[] = [
         element: <AdminCategories />,
       },
       {
-        path: "/admin/messages",
-        element: <AdminMessages />,
-      },
-      {
         path: "/admin/messages/:id",
         element: <ConversationDetailPage />,
       },
@@ -197,6 +193,10 @@ const router: RouteObject[] = [
       {
         path: "/staff/orders",
         element: <OrdersPage />,
+      },
+      {
+        path: "/staff/messages",
+        element: <StaffMessage />,
       },
     ],
   },

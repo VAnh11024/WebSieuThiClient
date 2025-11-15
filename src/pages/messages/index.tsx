@@ -1,24 +1,18 @@
-import { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { ConversationList } from "@/components/admin/messages/ConversationList"
-import { ConversationFilters } from "@/components/admin/messages/ConversationFilters"
-import { Search } from "lucide-react"
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { ConversationList } from "@/components/messages/ConversationList";
+import { ConversationFilters } from "@/components/messages/ConversationFilters";
+import { Search } from "lucide-react";
 
 export default function MessagesPage() {
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [dateFilter, setDateFilter] = useState("all")
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("all");
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="border-b border-border p-6">
-        <h1 className="text-3xl font-bold text-foreground">Quản lý Tin nhắn</h1>
-        <p className="text-sm text-muted-foreground mt-1">Quản lý cuộc hội thoại và phản hồi tin nhắn từ khách hàng</p>
-      </div>
-
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50">
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-4 pt-1">
         <div className="space-y-6 max-w-7xl">
           {/* Search and Filters */}
           <div className="space-y-4">
@@ -43,10 +37,13 @@ export default function MessagesPage() {
           </div>
 
           {/* Conversations List */}
-          <ConversationList search={search} statusFilter={statusFilter} dateFilter={dateFilter} />
+          <ConversationList
+            search={search}
+            statusFilter={statusFilter}
+            dateFilter={dateFilter}
+          />
         </div>
       </div>
     </div>
-  )
+  );
 }
-

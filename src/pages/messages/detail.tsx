@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageList } from "@/components/admin/messages/MessageList";
-import { ReplyForm } from "@/components/admin/messages/ReplyForm";
+import { MessageList } from "@/components/messages/MessageList";
+import { ReplyForm } from "@/components/messages/ReplyForm";
 import { ArrowLeft, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
