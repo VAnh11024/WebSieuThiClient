@@ -27,18 +27,48 @@ class ChatService {
     return response.data;
   }
 
-  async sendMessage(conversationId: string, text: string) {
+  async sendMessage(conversationId: string, text: string, files?: File[]) {
+    const formData = new FormData();
+    if (text) {
+      formData.append("text", text);
+    }
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
     const response = await api.post<CreateMessageResponse>(
-      `/conversations/${conversationId}/messages`,
-      { text }
+      `${this.basePath}/${conversationId}/messages`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data;
   }
 
-  async sendStaffMessage(conversationId: string, text: string) {
+  async sendStaffMessage(conversationId: string, text: string, files?: File[]) {
+    const formData = new FormData();
+    if (text) {
+      formData.append("text", text);
+    }
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
     const response = await api.post<CreateMessageResponse>(
       `${this.basePath}/${conversationId}/messages/staff`,
-      { text }
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     return response.data;
   }

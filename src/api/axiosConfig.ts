@@ -44,19 +44,27 @@ api.interceptors.response.use(
     };
 
     const status = error.response?.status;
-    const url = originalRequest.url || "";
+    const url = originalRequest?.url || "";
+    const errorData = error.response?.data as { message?: string } | undefined;
 
     // Log error
     console.error("❌ Response Error:", {
       status: error.response?.status,
       url: error.config?.url,
       message: error.message,
+      data: errorData,
     });
 
-    // Xử lý token hết hạn (401 Unauthorized)
+    // Xử lý token hết hạn (401 Unauthorized hoặc ACCESS_TOKEN_EXPIRED)
+    const isTokenExpired =
+      status === 401 ||
+      errorData?.message === "ACCESS_TOKEN_EXPIRED" ||
+      errorData?.message === "Unauthorized";
+
     if (
-      status === 401 &&
+      isTokenExpired &&
       !originalRequest._retry &&
+      originalRequest &&
       !url.includes("/auth/login-email") &&
       !url.includes("/auth/refresh-token") &&
       !url.includes("/auth/logout")
@@ -64,6 +72,8 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        console.log("🔄 Attempting to refresh token...");
+
         // Gọi API refresh token (sử dụng cookies)
         const response = await axios.post(
           `${api.defaults.baseURL}/auth/refresh-token`,
@@ -76,6 +86,8 @@ api.interceptors.response.use(
         // Lưu token mới
         localStorage.setItem("accessToken", accessToken);
 
+        console.log("✅ Token refreshed successfully");
+
         // Retry request với token mới
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -83,10 +95,13 @@ api.interceptors.response.use(
 
         return api(originalRequest);
       } catch (refreshError) {
+        console.error("❌ Refresh token failed:", refreshError);
+
         const userStr = localStorage.getItem("user");
         const userId = userStr
           ? (JSON.parse(userStr) as { id?: string })?.id
           : null;
+
         // Refresh token thất bại, chuyển về trang login
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -99,7 +114,12 @@ api.interceptors.response.use(
         }
         // Xóa cart guest nếu có
         localStorage.removeItem("cart_guest");
-        window.location.href = "/login";
+
+        // Chỉ redirect nếu không phải đang ở trang login
+        if (!window.location.pathname.includes("/login")) {
+          window.location.href = "/login";
+        }
+
         return Promise.reject(refreshError);
       }
     }

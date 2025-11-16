@@ -162,10 +162,7 @@ const router: RouteObject[] = [
         path: "/admin/categories",
         element: <AdminCategories />,
       },
-      {
-        path: "/admin/messages/:id",
-        element: <ConversationDetailPage />,
-      },
+
       {
         path: "/admin/inventory",
         element: <AdminInventory />,
@@ -197,6 +194,10 @@ const router: RouteObject[] = [
       {
         path: "/staff/messages",
         element: <StaffMessage />,
+      },
+      {
+        path: "/staff/messages/:id",
+        element: <ConversationDetailPage />,
       },
     ],
   },

@@ -2,12 +2,23 @@
 
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { X, Upload } from "lucide-react";
+import { X, Upload, FileIcon, Download, Smile } from "lucide-react";
 import type { Message } from "@/types/chat.type";
 import { getSocket } from "@/lib/socket";
 import chatAdminService from "@/api/services/chatAdminService";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+
+interface Attachment {
+  url: string;
+  type: "image" | "file";
+  name?: string;
+  size?: number;
+  mimetype?: string;
+}
+
 interface AdminMessage extends Message {
   file?: { name: string; type: string };
+  attachments?: Attachment[];
 }
 
 type AdminChatProps = {
@@ -18,11 +29,8 @@ type AdminChatProps = {
 export function AdminChat({ conversationId, onBack }: AdminChatProps) {
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [input, setInput] = useState("");
-  const [selectedFile, setSelectedFile] = useState<{
-    name: string;
-    type: string;
-    data?: string;
-  } | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,140 +61,45 @@ export function AdminChat({ conversationId, onBack }: AdminChatProps) {
   }, [messages]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const imageData = event.target?.result as string;
-          setSelectedFile({
-            name: file.name,
-            type: file.type,
-            data: imageData,
-          });
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setSelectedFile({ name: file.name, type: file.type });
-      }
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      // Limit to 5 files
+      const newFiles = [...selectedFiles, ...filesArray].slice(0, 5);
+      setSelectedFiles(newFiles);
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    const items = e.clipboardData?.items;
-    if (items) {
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.startsWith("image/")) {
-          e.preventDefault();
-          const file = items[i].getAsFile();
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              const imageData = event.target?.result as string;
-              setSelectedFile({
-                name: file.name,
-                type: file.type,
-                data: imageData,
-              });
-            };
-            reader.readAsDataURL(file);
-          }
-          break;
-        }
-      }
-    }
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // const handleSend = () => {
-  //   if (selectedFile) {
-  //     if (selectedFile.type.startsWith("image/") && selectedFile.data) {
-  //       setMessages([
-  //         ...messages,
-  //         {
-  //           id: Date.now().toString(),
-  //           text: input || "📷 Đã gửi ảnh",
-  //           sender: "user",
-  //           image: selectedFile.data,
-  //           timestamp: new Date().toISOString(),
-  //         },
-  //       ]);
-  //     } else {
-  //       setMessages([
-  //         ...messages,
-  //         {
-  //           id: Date.now().toString(),
-  //           text: input || "📎 Đã gửi file",
-  //           sender: "user",
-  //           file: { name: selectedFile.name, type: selectedFile.type },
-  //           timestamp: new Date().toISOString(),
-  //         },
-  //       ]);
-  //     }
-  //     setSelectedFile(null);
-  //     setInput("");
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
 
-  //     // Simulate admin response
-  //     setTimeout(() => {
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         {
-  //           id: Date.now().toString(),
-  //           text: "Tôi đã nhận file/ảnh của bạn. Sẽ xem xét và phản hồi ngay!",
-  //           sender: "admin",
-  //           timestamp: new Date().toISOString(),
-  //         },
-  //       ]);
-  //     }, 500);
-  //   } else if (input.trim()) {
-  //     setMessages([
-  //       ...messages,
-  //       {
-  //         id: Date.now().toString(),
-  //         text: input,
-  //         sender: "user",
-  //         timestamp: new Date().toISOString(),
-  //       },
-  //     ]);
-  //     setInput("");
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setInput((prev) => prev + emojiData.emoji);
+  };
 
-  //     // Simulate admin response
-  //     setTimeout(() => {
-  //       setMessages((prev) => [
-  //         ...prev,
-  //         {
-  //           id: Date.now().toString(),
-  //           text: "Cảm ơn bạn đã liên hệ! Quản trị viên sẽ phản hồi sớm nhất có thể.",
-  //           sender: "admin",
-  //           timestamp: new Date().toISOString(),
-  //         },
-  //       ]);
-  //     }, 500);
-  //   }
-  // };
   const handleSend = async () => {
     const text = input.trim();
 
-    if (!text && !selectedFile) return;
-
-    const finalText =
-      text ||
-      (selectedFile
-        ? selectedFile.type.startsWith("image/")
-          ? "📷 Đã gửi ảnh"
-          : "📎 Đã gửi file"
-        : "");
+    if (!text && selectedFiles.length === 0) return;
 
     try {
-      await chatAdminService.sendMessage(conversationId, finalText);
+      await chatAdminService.sendMessage(
+        conversationId,
+        text,
+        selectedFiles.length > 0 ? selectedFiles : undefined
+      );
       setInput("");
-      setSelectedFile(null);
+      setSelectedFiles([]);
+      setShowEmojiPicker(false);
     } catch (err) {
       console.error("Send message failed", err);
     }
-  };
-
-  const handleClearFile = () => {
-    setSelectedFile(null);
   };
 
   return (
@@ -215,38 +128,67 @@ export function AdminChat({ conversationId, onBack }: AdminChatProps) {
             }`}
           >
             <div className="max-w-xs">
-              {msg.image && (
-                <img
-                  src={msg.image}
-                  alt="Uploaded"
-                  className={`w-40 h-40 rounded-lg object-cover mb-2 ${
-                    msg.sender_type === "USER"
-                      ? "rounded-br-none"
-                      : "rounded-bl-none"
-                  }`}
-                />
-              )}
-              {msg.file && (
+              {/* Text message */}
+              {msg.text && (
                 <div
-                  className={`px-4 py-2 rounded-lg text-sm mb-2 flex items-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg text-sm ${
                     msg.sender_type === "USER"
                       ? "bg-green-500 text-white rounded-br-none"
                       : "bg-slate-100 text-foreground rounded-bl-none"
                   }`}
                 >
-                  <Upload className="w-4 h-4" />
-                  <span className="truncate">{msg.file.name}</span>
+                  {msg.text}
                 </div>
               )}
-              <div
-                className={`px-4 py-2 rounded-lg text-sm ${
-                  msg.sender_type === "USER"
-                    ? "bg-green-500 text-white rounded-br-none"
-                    : "bg-slate-100 text-foreground rounded-bl-none"
-                }`}
-              >
-                {msg.text}
-              </div>
+
+              {/* Attachments */}
+              {msg.attachments && msg.attachments.length > 0 && (
+                <div className="flex flex-col gap-2 mt-1">
+                  {msg.attachments.map((attachment, idx) => (
+                    <div key={idx}>
+                      {attachment.type === "image" ? (
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name || "Image"}
+                            className="max-w-xs rounded-lg border border-border hover:opacity-90 transition-opacity cursor-pointer"
+                          />
+                        </a>
+                      ) : (
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={attachment.name}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-muted/50 transition-colors ${
+                            msg.sender_type === "USER"
+                              ? "bg-green-500 text-white border-green-400"
+                              : "bg-slate-100 border-slate-200"
+                          }`}
+                        >
+                          <FileIcon className="w-5 h-5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {attachment.name || "File"}
+                            </p>
+                            {attachment.size && (
+                              <p className="text-xs opacity-75">
+                                {formatFileSize(attachment.size)}
+                              </p>
+                            )}
+                          </div>
+                          <Download className="w-4 h-4 flex-shrink-0" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -254,43 +196,73 @@ export function AdminChat({ conversationId, onBack }: AdminChatProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="px-4 py-3 border-t border-border">
-        {selectedFile && (
-          <div className="mb-3 flex gap-2">
-            <div className="relative">
-              {selectedFile.type.startsWith("image/") && selectedFile.data ? (
-                <img
-                  src={selectedFile.data}
-                  alt="Preview"
-                  className="w-16 h-16 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-lg bg-slate-200 flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-slate-400" />
-                </div>
-              )}
-              <button
-                onClick={handleClearFile}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+      <div className="px-4 py-3 border-t border-border relative">
+        {/* File preview */}
+        {selectedFiles.length > 0 && (
+          <div className="mb-3 flex gap-2 flex-wrap">
+            {selectedFiles.map((file, index) => (
+              <div
+                key={index}
+                className="relative group bg-slate-100 rounded-lg p-2 flex items-center gap-2 max-w-[200px]"
               >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
+                {file.type.startsWith("image/") ? (
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={file.name}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                    <FileIcon className="w-6 h-6 text-gray-600" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSize(file.size)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => removeFile(index)}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
+
+        {/* Emoji Picker */}
+        {showEmojiPicker && (
+          <div className="absolute bottom-16 left-4 z-50">
+            <EmojiPicker onEmojiClick={handleEmojiClick} />
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileUpload}
+            multiple
+            accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.csv,.zip,.rar"
             className="hidden"
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 hover:bg-green-50 rounded border border-input transition-colors"
+            disabled={selectedFiles.length >= 5}
+            className="p-2 hover:bg-green-50 rounded border border-input transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Gửi file hoặc ảnh"
           >
             <Upload className="w-4 h-4 text-green-500" />
+          </button>
+          <button
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="p-2 hover:bg-green-50 rounded border border-input transition-colors"
+            title="Chọn emoji"
+          >
+            <Smile className="w-4 h-4 text-green-500" />
           </button>
           <input
             ref={inputRef}
@@ -298,17 +270,13 @@ export function AdminChat({ conversationId, onBack }: AdminChatProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            onPaste={handlePaste}
-            placeholder={
-              selectedFile
-                ? "Nhập chú thích..."
-                : "Nhập tin nhắn hoặc dán ảnh..."
-            }
+            placeholder="Nhập tin nhắn..."
             className="flex-1 px-3 py-2 rounded border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
           />
           <button
             onClick={handleSend}
-            className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm font-medium"
+            disabled={!input.trim() && selectedFiles.length === 0}
+            className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Gửi
           </button>

@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { ConversationList } from "@/components/messages/ConversationList";
-import { ConversationFilters } from "@/components/messages/ConversationFilters";
 import { Search } from "lucide-react";
 
 export default function MessagesPage() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
 
   return (
     <div className="flex-1 flex flex-col bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50">
@@ -26,22 +23,10 @@ export default function MessagesPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-
-            {/* Filters */}
-            <ConversationFilters
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              dateFilter={dateFilter}
-              setDateFilter={setDateFilter}
-            />
           </div>
 
           {/* Conversations List */}
-          <ConversationList
-            search={search}
-            statusFilter={statusFilter}
-            dateFilter={dateFilter}
-          />
+          <ConversationList search={search} />
         </div>
       </div>
     </div>
