@@ -1,12 +1,14 @@
 export interface MenuCombo {
-  id: number;
+  _id: string; // MongoDB ObjectId
+  id?: string; // Alias cho _id
   name: string;
   description: string;
-  price: number;
-  status: number; // 1 = đang bán, 0 = ngừng bán
-  image_url: string;
-  created_at: string;
-  updated_at: string;
+  image: string; // Tên field từ backend
+  image_url?: string; // Alias cho image
+  is_active: boolean; // true = đang bán, false = ngừng bán
+  is_deleted?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Ingredient {
@@ -17,6 +19,10 @@ export interface Ingredient {
   price: number;
   image_url: string;
   available: boolean;
+  product_id?: string; // ID sản phẩm từ database
+  discount_percent?: number;
+  unit_price?: number;
+  stock_quantity?: number;
 }
 
 export interface MenuComboWithIngredients extends MenuCombo {

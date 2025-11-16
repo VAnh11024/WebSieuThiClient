@@ -1,7 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Ingredient } from "@/types/menu.type";
-import { sampleProducts } from "@/pages/products/productData";
 import type { Product } from "@/types";
+import productService from "@/api/services/productService";
+import categoryService from "@/api/services/catalogService";
 
 // Khởi tạo Gemini AI
 const ai = new GoogleGenAI({
@@ -9,17 +10,38 @@ const ai = new GoogleGenAI({
 });
 
 /**
- * Lấy tất cả sản phẩm có sẵn trong kho từ productData
- */ 
-function getAllAvailableProducts(): Product[] {
-  const allProducts: Product[] = [];
+ * Lấy tất cả sản phẩm có sẵn trong kho từ database
+ */
+async function getAllAvailableProducts(): Promise<Product[]> {
+  try {
+    // Lấy danh sách tất cả categories
+    const categories = await categoryService.getRootCategories();
+    const allProducts: Product[] = [];
 
-  // Lặp qua tất cả các category và lấy products
-  Object.values(sampleProducts).forEach((products) => {
-    allProducts.push(...products);
-  });
+    // Lấy sản phẩm từ từng category
+    for (const category of categories) {
+      try {
+        const products = await productService.getProducts(category.slug);
+        allProducts.push(...products);
+      } catch (error) {
+        console.error(
+          `Error fetching products for category ${category.slug}:`,
+          error
+        );
+      }
+    }
 
-  return allProducts.filter((p) => p.stock_quantity > 0);
+    // Lọc sản phẩm còn hàng và active
+    return allProducts.filter(
+      (p) =>
+        p.is_active !== false &&
+        p.stock_status === "in_stock" &&
+        ((p.stock_quantity && p.stock_quantity > 0) || p.quantity > 0)
+    );
+  } catch (error) {
+    console.error("Error fetching all available products:", error);
+    return [];
+  }
 }
 
 /**
@@ -31,16 +53,19 @@ export async function getIngredientsForDish(
   dishName: string
 ): Promise<Ingredient[]> {
   try {
-    const availableProducts = getAllAvailableProducts();
+    const availableProducts = await getAllAvailableProducts();
 
     // Tạo danh sách sản phẩm có sẵn để gửi cho Gemini
     const productList = availableProducts
       .map(
-        (p) => `- ${p.name} (${p.quantity || "N/A"}) - Giá: ${p.final_price}đ`
+        (p) =>
+          `- ${p.name} (${p.unit || p.quantity || "N/A"}) - Giá: ${
+            p.final_price || p.unit_price
+          }đ`
       )
       .join("\n");
 
-    const model = "gemini-2.0-flash-exp";
+    const model = "gemini-2.0-flash";
 
     const prompt = `
 Bạn là một trợ lý ẩm thực chuyên nghiệp. Hãy phân tích món ăn "${dishName}" và trả về danh sách nguyên liệu cần thiết.
@@ -111,11 +136,21 @@ Trả về theo định dạng JSON như sau (KHÔNG thêm markdown hay ký tự
         ingredients.push({
           id: ingredientId++,
           name: matchedProduct.name,
-          quantity: suggestion.quantity || matchedProduct.quantity || "1",
-          unit: matchedProduct.quantity || "",
-          price: matchedProduct.final_price,
-          image_url: matchedProduct.image_url,
+          quantity:
+            suggestion.quantity ||
+            matchedProduct.unit ||
+            matchedProduct.quantity ||
+            "1",
+          unit: matchedProduct.unit || "",
+          price: matchedProduct.final_price || matchedProduct.unit_price,
+          image_url:
+            matchedProduct.image_url || matchedProduct.image_primary || "",
           available: true,
+          product_id: matchedProduct._id || matchedProduct.id,
+          discount_percent: matchedProduct.discount_percent || 0,
+          unit_price: matchedProduct.unit_price,
+          stock_quantity:
+            matchedProduct.stock_quantity || matchedProduct.quantity,
         });
       }
     }

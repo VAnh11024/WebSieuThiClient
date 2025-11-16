@@ -1,20 +1,29 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import type { MenuComboWithIngredients, Ingredient } from "@/types/menu.type";
-import { menuCombos } from "@/pages/menu";
+import type {
+  MenuCombo,
+  MenuComboWithIngredients,
+  Ingredient,
+} from "@/types/menu.type";
+import type { Product } from "@/types";
 import { getIngredientsForDish } from "@/lib/geminiService";
-import { spicesData } from "@/lib/sampleData";
+import productService from "@/api/services/productService";
+import comboService from "@/api/services/comboService";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ProductCard } from "@/components/products/ProductCard";
+import { useCart } from "@/components/cart/CartContext";
 
 export default function DailyMarket() {
-  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [combos, setCombos] = useState<MenuCombo[]>([]);
+  const [isLoadingCombos, setIsLoadingCombos] = useState(false);
   const [selectedCombo, setSelectedCombo] =
     useState<MenuComboWithIngredients | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoadingIngredients, setIsLoadingIngredients] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [spices, setSpices] = useState<Product[]>([]);
+  const [isLoadingSpices, setIsLoadingSpices] = useState(false);
   const spicesScrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -52,20 +61,73 @@ export default function DailyMarket() {
     setSelectedCombo(null);
     setIngredients([]);
     setError(null);
-    setQuantities({});
   };
 
-  const handleQuantityChange = (itemId: number, delta: number) => {
-    setQuantities((prev) => {
-      const current = prev[itemId] || 0;
-      const newQty = Math.max(0, current + delta);
-      return { ...prev, [itemId]: newQty };
+  // Convert Ingredient to Product for ProductCard
+  const ingredientToProduct = (ingredient: Ingredient): Product => {
+    return {
+      _id: ingredient.product_id || ingredient.id.toString(),
+      id: ingredient.product_id || ingredient.id.toString(),
+      name: ingredient.name,
+      slug: ingredient.name.toLowerCase().replace(/\s+/g, "-"),
+      unit: ingredient.unit,
+      unit_price: ingredient.unit_price || ingredient.price,
+      discount_percent: ingredient.discount_percent || 0,
+      final_price: ingredient.price,
+      image_primary: ingredient.image_url,
+      image_url: ingredient.image_url,
+      quantity: ingredient.stock_quantity || 0,
+      stock_quantity: ingredient.stock_quantity || 0,
+      stock_status: ingredient.available ? "in_stock" : "out_of_stock",
+      is_active: true,
+      is_deleted: false,
+    };
+  };
+
+  const handleAddToCart = (
+    product: Product & { selectedQuantity?: number }
+  ) => {
+    const productId = typeof product.id === "string" ? product.id : product._id;
+    addToCart({
+      id: productId || product._id,
+      name: product.name,
+      price: product.final_price || product.unit_price,
+      image: product.image_url || product.image_primary || "",
+      unit: product.unit || "1 sản phẩm",
+      quantity: product.selectedQuantity || 1,
     });
   };
 
-  const handleBuyClick = (itemId: number) => {
-    setQuantities((prev) => ({ ...prev, [itemId]: 1 }));
-  };
+  // Fetch combos và spices từ database khi component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch combos
+        setIsLoadingCombos(true);
+        const combosData = await comboService.getCombos();
+        setCombos(combosData);
+      } catch (err) {
+        console.error("Error fetching combos:", err);
+      } finally {
+        setIsLoadingCombos(false);
+      }
+
+      try {
+        // Fetch spices
+        setIsLoadingSpices(true);
+        const spicesProducts = await productService.getProducts(
+          "dau-an-nuoc-cham-gia-vi"
+        );
+        setSpices(spicesProducts);
+      } catch (err) {
+        console.error("Error fetching spices:", err);
+      } finally {
+        setIsLoadingSpices(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const checkScrollButtons = () => {
     if (spicesScrollRef.current) {
@@ -86,7 +148,7 @@ export default function DailyMarket() {
         window.removeEventListener("resize", checkScrollButtons);
       };
     }
-  }, [ingredients]);
+  }, [spices]);
 
   const scrollSpices = (direction: "left" | "right") => {
     if (spicesScrollRef.current) {
@@ -99,24 +161,6 @@ export default function DailyMarket() {
         behavior: "smooth",
       });
     }
-  };
-
-  const calculateTotalPrice = () => {
-    let total = 0;
-
-    // Tính tổng nguyên liệu chính
-    ingredients.forEach((item) => {
-      const qty = quantities[item.id] || 0;
-      total += item.price * qty;
-    });
-
-    // Tính tổng gia vị
-    spicesData.forEach((spice) => {
-      const qty = quantities[spice.id] || 0;
-      total += spice.price * qty;
-    });
-
-    return total;
   };
 
   return (
@@ -145,38 +189,48 @@ export default function DailyMarket() {
       </div>
 
       {/* Dishes Grid */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {menuCombos.map((combo) => (
-          <div
-            key={combo.id}
-            className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200"
-          >
-            {/* Image */}
-            <div className="relative aspect-square overflow-hidden bg-gray-100 flex items-center justify-center p-2">
-              <img
-                src={combo.image_url}
-                alt={combo.name}
-                className="max-w-full max-h-full w-auto h-auto object-contain hover:scale-105 transition-transform duration-300"
-              />
-            </div>
+      {isLoadingCombos ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+        </div>
+      ) : combos.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {combos.map((combo) => (
+            <div
+              key={combo._id}
+              className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200"
+            >
+              {/* Image */}
+              <div className="relative aspect-square overflow-hidden bg-gray-100 flex items-center justify-center p-2">
+                <img
+                  src={combo.image || combo.image_url}
+                  alt={combo.name}
+                  className="max-w-full max-h-full w-auto h-auto object-contain hover:scale-105 transition-transform duration-300"
+                />
+              </div>
 
-            {/* Content */}
-            <div className="p-3">
-              <h3 className="font-semibold text-sm sm:text-base text-gray-800 mb-1 line-clamp-2">
-                {combo.name}
-              </h3>
+              {/* Content */}
+              <div className="p-3">
+                <h3 className="font-semibold text-sm sm:text-base text-gray-800 mb-1 line-clamp-2">
+                  {combo.name}
+                </h3>
 
-              {/* Button */}
-              <button
-                onClick={() => handleBuyIngredients(combo)}
-                className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium py-2 rounded-md transition-colors"
-              >
-                MUA NGUYÊN LIỆU
-              </button>
+                {/* Button */}
+                <button
+                  onClick={() => handleBuyIngredients(combo)}
+                  className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm font-medium py-2 rounded-md transition-colors"
+                >
+                  MUA NGUYÊN LIỆU
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-600">Không có combo món ăn nào</p>
+        </div>
+      )}
 
       {/* Modal for Ingredients */}
       {isModalOpen && selectedCombo && (
@@ -229,248 +283,85 @@ export default function DailyMarket() {
                 <>
                   {/* Main Ingredients Section */}
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold px-2 text-gray-800">
+                    <h4 className="text-sm font-semibold px-2 text-gray-800 mb-3">
                       Lựa chọn loại nguyên liệu chính
                     </h4>
 
-                    {/* Group ingredients into rows of 3 */}
-                    {Array.from({
-                      length: Math.ceil(ingredients.length / 3),
-                    }).map((_, rowIndex) => (
-                      <div
-                        key={rowIndex}
-                        className="rounded-8px pt-[6px] px-[8px] lg:px-0 pb-2px !bg-white"
-                      >
-                        <div className="grid grid-cols-3 gap-2">
-                          {ingredients
-                            .slice(rowIndex * 3, rowIndex * 3 + 3)
-                            .map((ingredient) => {
-                              const qty = quantities[ingredient.id] || 0;
-                              return (
-                                <div
-                                  key={ingredient.id}
-                                  className="px-1px w-full h-full overflow-hidden border border-[#F2F5F9] !rounded-lg bg-white hover:border-green-400 transition-colors group"
-                                >
-                                  {/* Image with badges */}
-                                  <div
-                                    className="relative aspect-square overflow-hidden bg-gray-50 cursor-pointer flex items-center justify-center p-1"
-                                    onClick={() =>
-                                      navigate(
-                                        `/products-detail/${ingredient.id}`
-                                      )
-                                    }
-                                  >
-                                    <img
-                                      src={ingredient.image_url}
-                                      alt={ingredient.name}
-                                      className="max-w-full max-h-full w-auto h-auto object-contain group-hover:scale-105 transition-transform"
-                                    />
-                                    {/* Badges */}
-                                    <div className="absolute top-1 left-1">
-                                      <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                        -20%
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Content */}
-                                  <div className="p-1.5">
-                                    <h5 className="text-[11px] font-medium text-gray-800 line-clamp-2 mb-0.5 min-h-[28px] leading-tight">
-                                      {ingredient.name}
-                                    </h5>
-                                    <p className="text-[9px] text-gray-500 mb-1">
-                                      {ingredient.quantity}
-                                    </p>
-
-                                    {/* Price with discount */}
-                                    <div className="mb-1.5">
-                                      <div className="flex items-center gap-1 flex-wrap">
-                                        <p className="text-xs font-bold text-red-600">
-                                          {ingredient.price.toLocaleString()}đ
-                                        </p>
-                                        <p className="text-[9px] text-gray-400 line-through">
-                                          {Math.round(
-                                            ingredient.price * 1.25
-                                          ).toLocaleString()}
-                                          đ
-                                        </p>
-                                      </div>
-                                    </div>
-
-                                    {/* Quantity controls or Buy button */}
-                                    {qty === 0 ? (
-                                      <button
-                                        onClick={() =>
-                                          handleBuyClick(ingredient.id)
-                                        }
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white text-[11px] py-1 rounded font-medium transition-colors"
-                                      >
-                                        MUA
-                                      </button>
-                                    ) : (
-                                      <div className="flex items-center justify-between bg-gray-100 rounded px-1 py-0.5">
-                                        <button
-                                          onClick={() =>
-                                            handleQuantityChange(
-                                              ingredient.id,
-                                              -1
-                                            )
-                                          }
-                                          className="w-5 h-5 flex items-center justify-center text-gray-600 hover:bg-white rounded transition-colors text-sm"
-                                        >
-                                          −
-                                        </button>
-                                        <span className="text-xs font-medium">
-                                          {qty}
-                                        </span>
-                                        <button
-                                          onClick={() =>
-                                            handleQuantityChange(
-                                              ingredient.id,
-                                              1
-                                            )
-                                          }
-                                          className="w-5 h-5 flex items-center justify-center text-gray-600 hover:bg-white rounded transition-colors text-sm"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    ))}
+                    {/* Grid with ProductCard */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 px-2">
+                      {ingredients.map((ingredient) => (
+                        <ProductCard
+                          key={ingredient.id}
+                          product={ingredientToProduct(ingredient)}
+                          onAddToCart={handleAddToCart}
+                        />
+                      ))}
+                    </div>
                   </div>
 
                   {/* Spices Section */}
-                  <div className="mt-3 border-t pt-3">
-                    <h4 className="text-sm font-semibold px-2 text-gray-800 mb-2">
+                  <div className="mt-6 border-t pt-4">
+                    <h4 className="text-sm font-semibold px-2 text-gray-800 mb-3">
                       Mua thêm gia vị
                     </h4>
 
-                    <div className="relative">
-                      {/* Left Arrow */}
-                      {showLeftArrow && (
-                        <button
-                          onClick={() => scrollSpices("left")}
-                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white shadow-lg rounded-full p-1.5 transition-all"
-                        >
-                          <ChevronLeft className="w-4 h-4 text-gray-700" />
-                        </button>
-                      )}
+                    {isLoadingSpices ? (
+                      <div className="flex items-center justify-center w-full py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                      </div>
+                    ) : spices.length > 0 ? (
+                      <div className="relative">
+                        {/* Left Arrow */}
+                        {showLeftArrow && (
+                          <button
+                            onClick={() => scrollSpices("left")}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white shadow-lg rounded-full p-1.5 transition-all"
+                          >
+                            <ChevronLeft className="w-4 h-4 text-gray-700" />
+                          </button>
+                        )}
 
-                      {/* Scroll Container */}
-                      <div
-                        ref={spicesScrollRef}
-                        className="overflow-x-auto no-scrollbar scroll-smooth"
-                        style={{
-                          paddingLeft: showLeftArrow ? "32px" : "0",
-                          paddingRight: showRightArrow ? "32px" : "0",
-                        }}
-                      >
-                        <div className="flex gap-2 pb-2">
-                          {spicesData.map((spice) => {
-                            const qty = quantities[spice.id] || 0;
-                            return (
+                        {/* Scroll Container with ProductCard */}
+                        <div
+                          ref={spicesScrollRef}
+                          className="overflow-x-auto no-scrollbar scroll-smooth"
+                          style={{
+                            paddingLeft: showLeftArrow ? "40px" : "8px",
+                            paddingRight: showRightArrow ? "40px" : "8px",
+                          }}
+                        >
+                          <div className="flex gap-3 pb-2">
+                            {spices.map((spice) => (
                               <div
                                 key={spice.id}
-                                className="flex-shrink-0 w-[120px] px-1px overflow-hidden border border-[#F2F5F9] !rounded-lg bg-white hover:border-green-400 transition-colors"
+                                className="flex-shrink-0 w-[180px]"
                               >
-                                {/* Image */}
-                                <div
-                                  className="relative aspect-square overflow-hidden bg-gray-50 cursor-pointer flex items-center justify-center p-1"
-                                  onClick={() =>
-                                    navigate(`/products-detail/${spice.id}`)
-                                  }
-                                >
-                                  <img
-                                    src={spice.image_url}
-                                    alt={spice.name}
-                                    className="max-w-full max-h-full w-auto h-auto object-contain hover:scale-105 transition-transform"
-                                  />
-                                  {/* Badge */}
-                                  <div className="absolute top-1 left-1">
-                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-semibold">
-                                      -20%
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-1.5">
-                                  <h5 className="text-[11px] font-medium text-gray-800 line-clamp-2 mb-0.5 min-h-[28px] leading-tight">
-                                    {spice.name}
-                                  </h5>
-                                  <p className="text-[9px] text-gray-500 mb-1">
-                                    {spice.quantity}
-                                  </p>
-
-                                  {/* Price with discount */}
-                                  <div className="mb-1.5">
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                      <p className="text-xs font-bold text-red-600">
-                                        {spice.price.toLocaleString()}đ
-                                      </p>
-                                      <p className="text-[9px] text-gray-400 line-through">
-                                        {Math.round(
-                                          spice.price * 1.25
-                                        ).toLocaleString()}
-                                        đ
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {/* Quantity controls or Buy button */}
-                                  {qty === 0 ? (
-                                    <button
-                                      onClick={() => handleBuyClick(spice.id)}
-                                      className="w-full bg-green-600 hover:bg-green-700 text-white text-[11px] py-1 rounded font-medium transition-colors"
-                                    >
-                                      MUA
-                                    </button>
-                                  ) : (
-                                    <div className="flex items-center justify-between bg-gray-100 rounded px-1 py-0.5">
-                                      <button
-                                        onClick={() =>
-                                          handleQuantityChange(spice.id, -1)
-                                        }
-                                        className="w-5 h-5 flex items-center justify-center text-gray-600 hover:bg-white rounded transition-colors text-sm"
-                                      >
-                                        −
-                                      </button>
-                                      <span className="text-xs font-medium">
-                                        {qty}
-                                      </span>
-                                      <button
-                                        onClick={() =>
-                                          handleQuantityChange(spice.id, 1)
-                                        }
-                                        className="w-5 h-5 flex items-center justify-center text-gray-600 hover:bg-white rounded transition-colors text-sm"
-                                      >
-                                        +
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                                <ProductCard
+                                  product={spice}
+                                  onAddToCart={handleAddToCart}
+                                />
                               </div>
-                            );
-                          })}
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Right Arrow */}
-                      {showRightArrow && (
-                        <button
-                          onClick={() => scrollSpices("right")}
-                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white shadow-lg rounded-full p-1.5 transition-all"
-                        >
-                          <ChevronRight className="w-4 h-4 text-gray-700" />
-                        </button>
-                      )}
-                    </div>
+                        {/* Right Arrow */}
+                        {showRightArrow && (
+                          <button
+                            onClick={() => scrollSpices("right")}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/95 hover:bg-white shadow-lg rounded-full p-1.5 transition-all"
+                          >
+                            <ChevronRight className="w-4 h-4 text-gray-700" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center w-full py-8">
+                        <p className="text-gray-500 text-sm">
+                          Không có gia vị nào
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -484,15 +375,12 @@ export default function DailyMarket() {
 
             {/* Modal Footer */}
             {!isLoadingIngredients && !error && ingredients.length > 0 && (
-              <div className="border-t bg-white p-3 flex justify-between items-center flex-shrink-0">
-                <div>
-                  <p className="text-[10px] text-gray-600">Tổng tiền</p>
-                  <p className="text-lg font-bold text-green-600">
-                    {calculateTotalPrice().toLocaleString()}đ
-                  </p>
-                </div>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors shadow-lg text-sm">
-                  HOÀN TẤT
+              <div className="border-t bg-white p-3 flex justify-end items-center flex-shrink-0">
+                <button
+                  onClick={closeModal}
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors shadow-lg text-sm"
+                >
+                  ĐÓNG
                 </button>
               </div>
             )}
