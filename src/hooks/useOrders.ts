@@ -6,6 +6,8 @@ import type { CartItem } from "@/types/cart.type";
 import { orderService } from "@/api";
 import paymentService from "@/api/services/paymentService";
 import { useAuthStore } from "@/stores/authStore";
+import { getSocket } from "@/lib/socket";
+import { transformOrder, type BackendOrder } from "@/lib/order.mapper";
 
 export interface CreateOrderCustomerInfo {
   name: string;
@@ -33,6 +35,69 @@ export function useOrders() {
   const role = user?.role?.toLowerCase?.();
   const isStaff = role === "staff" || role === "admin";
 
+  const socket = getSocket();
+
+  const fetchOrders = async () => {
+    if (!isAuthenticated || (!userId && !isStaff)) {
+      setLoading(false);
+      setOrders([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      if (isStaff) {
+        const { orders: staffOrders } = await orderService.getStaffOrders();
+        setOrders(staffOrders);
+      } else {
+        const fetchedOrders = await orderService.getMyOrders();
+        setOrders(fetchedOrders);
+      }
+    } catch (err: any) {
+      console.error("Error fetching orders:", err);
+      setError(
+        err?.response?.data?.message || "Không thể tải danh sách đơn hàng"
+      );
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleNewOrder = (payload: {
+    orderId: string;
+    message: string;
+    order: BackendOrder;
+  }) => {
+    setOrders((prevOrders) => [transformOrder(payload.order), ...prevOrders]);
+  };
+
+  const handleOrderUpdated = (payload: {
+    orderId: string;
+    newStatus: string;
+    message: string;
+    order: BackendOrder;
+  }) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === payload.orderId
+          ? {
+              ...order,
+              status: payload.newStatus as Order["status"],
+            }
+          : order
+      )
+    );
+  };
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("staff:order-updated", handleOrderUpdated);
+      socket.on("order:new", handleNewOrder);
+    }
+  }, [socket]);
+
   const replaceOrderInState = useCallback((updatedOrder: Order) => {
     setOrders((prevOrders) =>
       prevOrders.map((order) => {
@@ -45,34 +110,6 @@ export function useOrders() {
 
   // Fetch orders từ API khi user đăng nhập
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!isAuthenticated || (!userId && !isStaff)) {
-        setLoading(false);
-        setOrders([]);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        if (isStaff) {
-          const { orders: staffOrders } = await orderService.getStaffOrders();
-          setOrders(staffOrders);
-        } else {
-          const fetchedOrders = await orderService.getMyOrders();
-          setOrders(fetchedOrders);
-        }
-      } catch (err: any) {
-        console.error("Error fetching orders:", err);
-        setError(
-          err?.response?.data?.message || "Không thể tải danh sách đơn hàng"
-        );
-        setOrders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchOrders();
   }, [isAuthenticated, userId, isStaff]);
 

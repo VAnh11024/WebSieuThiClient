@@ -1,7 +1,10 @@
 import { CategoryNav } from "@/components/category/CategoryNav";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import type { CategoryNav as Category } from "@/types/category.type";
+import type {
+  CategoryNav as Category,
+  Category as CategoryType,
+} from "@/types/category.type";
 import type { Product } from "@/types/product.type";
 import type { Banner } from "@/types/banner.type";
 import Banners from "@/components/productPage/banner/Banners";
@@ -10,7 +13,6 @@ import ProductGridWithBanners from "@/components/products/ProductGridWithBanners
 import FilterBar from "@/components/productPage/filter/FilterBar";
 import Promotion from "@/components/productPage/promotion/Promotion";
 import { bannerService, categoryService, productService } from "@/api";
-import type { Category as CategoryType } from "@/types/category.type";
 import { toCategoryNav } from "@/lib/constants";
 import { useNotification } from "@/hooks/useNotification";
 import { mapProductFromApi } from "@/lib/utils/productMapper";
@@ -22,7 +24,9 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentCategory, setCurrentCategory] = useState<CategoryType | null>(null);
+  const [currentCategory, setCurrentCategory] = useState<CategoryType | null>(
+    null
+  );
   const [promotionProducts, setPromotionProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const { showNotification } = useNotification();
@@ -43,135 +47,108 @@ export default function ProductsPage() {
       try {
         setLoading(true);
         setSelectedCategoryId(categoryFromUrl);
-        // Reset categories trước khi fetch mới
         setCategories([]);
 
-        // 1. Lấy thông tin category từ slug
-        console.log("=== Fetching category by slug ===", categoryFromUrl);
-        const category = await categoryService.getCategoryBySlug(categoryFromUrl);
+        const category = await categoryService.getCategoryBySlug(
+          categoryFromUrl
+        );
         setCurrentCategory(category);
-        
-        console.log("=== Category loaded ===");
-        console.log("Full category object:", category);
-        console.log("Category ID (id):", category.id);
-        console.log("Category ID (_id):", category._id);
-        console.log("Parent ID:", category.parent_id);
-        console.log("Parent ID type:", typeof category.parent_id);
-        console.log("Parent ID value:", JSON.stringify(category.parent_id));
 
         // 2. Kiểm tra xem category này là level 1 hay level 2
         // Backend transform _id thành id khi serialize JSON, nên ưu tiên id trước
         const categoryId = category.id || category._id || "";
-        
+
         // Xử lý parent_id: có thể là string, object (populated), hoặc null
         let parentIdValue: string | null = null;
         if (category.parent_id) {
-          if (typeof category.parent_id === 'string') {
+          if (typeof category.parent_id === "string") {
             parentIdValue = category.parent_id;
-          } else if (typeof category.parent_id === 'object' && category.parent_id !== null) {
+          } else if (
+            typeof category.parent_id === "object" &&
+            category.parent_id !== null
+          ) {
             // Nếu được populate, lấy id từ object
-            parentIdValue = (category.parent_id as any).id || (category.parent_id as any)._id || null;
+            parentIdValue =
+              (category.parent_id as any).id ||
+              (category.parent_id as any)._id ||
+              null;
           }
         }
-        
+
         const isLevel1 = !parentIdValue;
-        
-        console.log("=== Category Analysis ===");
-        console.log("Is Level 1:", isLevel1);
-        console.log("Category ID to use:", categoryId);
-        console.log("Parent ID value:", parentIdValue);
-        console.log("Category ID type:", typeof categoryId);
-        console.log("Category ID length:", categoryId?.length);
 
         // 3. Fetch subcategories hoặc siblings từ getAllCategories (giống CategorySidebar)
         // Sử dụng getAllCategories() vì nó đã có nested structure với subCategories
-        console.log("=== Fetching all categories (nested structure) ===");
-        
+
         try {
           const allCategories = await categoryService.getAllCategories();
-          console.log("=== All Categories Response ===");
-          console.log("Total categories (level 1):", allCategories?.length || 0);
-          
-          if (allCategories && Array.isArray(allCategories) && allCategories.length > 0) {
+          if (
+            allCategories &&
+            Array.isArray(allCategories) &&
+            allCategories.length > 0
+          ) {
             // Helper function để so sánh ID (chuyển về string để so sánh)
-            const compareIds = (id1: string | undefined | null, id2: string | undefined | null): boolean => {
+            const compareIds = (
+              id1: string | undefined | null,
+              id2: string | undefined | null
+            ): boolean => {
               if (!id1 || !id2) return false;
               return String(id1) === String(id2);
             };
-            
+
             if (isLevel1) {
               // Category level 1: Tìm category này trong allCategories và lấy subCategories
               // Tìm theo ID hoặc slug (fallback)
-              const currentCategoryData = allCategories.find((cat: CategoryType & { subCategories?: CategoryType[] }) => {
-                const catId = cat.id || cat._id;
-                const catSlug = cat.slug;
-                // So sánh theo ID hoặc slug
-                return compareIds(catId, categoryId) || catSlug === categoryFromUrl;
-              });
-              
+              const currentCategoryData = allCategories.find(
+                (cat: CategoryType & { subCategories?: CategoryType[] }) => {
+                  const catId = cat.id || cat._id;
+                  const catSlug = cat.slug;
+                  // So sánh theo ID hoặc slug
+                  return (
+                    compareIds(catId, categoryId) || catSlug === categoryFromUrl
+                  );
+                }
+              );
+
               if (currentCategoryData) {
                 const subCategories = currentCategoryData.subCategories || [];
-                console.log("=== Found current category in allCategories ===");
-                console.log("Category name:", currentCategoryData.name);
-                console.log("Subcategories count:", subCategories.length);
-                console.log("Subcategories:", subCategories.map((c: CategoryType) => ({ id: c.id || c._id, name: c.name, slug: c.slug })));
-                
                 if (subCategories.length > 0) {
                   const navCategories = subCategories.map(toCategoryNav);
-                  console.log("=== Nav Categories Mapped ===");
-                  console.log("Nav categories:", navCategories);
                   setCategories(navCategories);
-                  console.log("Categories state updated with", navCategories.length, "items");
                 } else {
-                  console.warn("No subcategories found in nested structure");
                   setCategories([]);
                 }
               } else {
-                console.warn("Current category not found in allCategories. Trying to find by slug:", categoryFromUrl);
-                console.log("Available categories:", allCategories.map((c: CategoryType) => ({ id: c.id || c._id, name: c.name, slug: c.slug })));
                 setCategories([]);
               }
             } else {
-              // Category level 2: Tìm parent category và lấy tất cả siblings
-              console.log("=== Looking for parent category in allCategories ===");
-              console.log("Parent ID to find:", parentIdValue);
-              
-              const parentCategoryData = allCategories.find((cat: CategoryType & { subCategories?: CategoryType[] }) => {
-                const catId = cat.id || cat._id;
-                return compareIds(catId, parentIdValue);
-              });
-              
+              const parentCategoryData = allCategories.find(
+                (cat: CategoryType & { subCategories?: CategoryType[] }) => {
+                  const catId = cat.id || cat._id;
+                  return compareIds(catId, parentIdValue);
+                }
+              );
+
               if (parentCategoryData) {
                 const siblings = parentCategoryData.subCategories || [];
-                console.log("=== Found parent category in allCategories ===");
-                console.log("Parent category name:", parentCategoryData.name);
-                console.log("Siblings count:", siblings.length);
-                console.log("Siblings:", siblings.map((c: CategoryType) => ({ id: c.id || c._id, name: c.name, slug: c.slug })));
-                
+
                 if (siblings.length > 0) {
                   const navCategories = siblings.map(toCategoryNav);
-                  console.log("=== Nav Categories Mapped ===");
-                  console.log("Nav categories:", navCategories);
                   setCategories(navCategories);
-                  console.log("Categories state updated with", navCategories.length, "items");
                 } else {
-                  console.warn("No sibling categories found in nested structure");
                   setCategories([]);
                 }
               } else {
-                console.warn("Parent category not found in allCategories. Parent ID:", parentIdValue);
-                console.log("Available categories:", allCategories.map((c: CategoryType) => ({ id: c.id || c._id, name: c.name, slug: c.slug })));
                 setCategories([]);
               }
             }
           } else {
-            console.warn("No categories found in getAllCategories response");
             setCategories([]);
           }
         } catch (error) {
           console.error("=== Error fetching all categories ===");
           console.error("Error object:", error);
-          if (error && typeof error === 'object' && 'response' in error) {
+          if (error && typeof error === "object" && "response" in error) {
             const axiosError = error as any;
             console.error("Response status:", axiosError.response?.status);
             console.error("Response data:", axiosError.response?.data);
@@ -185,21 +162,17 @@ export default function ProductsPage() {
         }
 
         // 4. Lấy banners cho category hiện tại
-        console.log("=== Fetching banners for category ===");
         await fetchBanners(categoryFromUrl);
 
         // 5. Lấy products theo category slug (không block bởi categories)
-        console.log("=== Fetching products ===");
         await fetchProductsByCategory(categoryFromUrl);
-        
-        // 6. Lấy promotion products
-        console.log("=== Fetching promotion products ===");
-        await fetchPromotionProducts(categoryFromUrl);
 
+        // 6. Lấy promotion products
+        await fetchPromotionProducts(categoryFromUrl);
       } catch (error) {
         console.error("=== Error loading category data ===");
         console.error("Error object:", error);
-        if (error && typeof error === 'object' && 'response' in error) {
+        if (error && typeof error === "object" && "response" in error) {
           const axiosError = error as any;
           console.error("Response status:", axiosError.response?.status);
           console.error("Response data:", axiosError.response?.data);
@@ -224,13 +197,6 @@ export default function ProductsPage() {
 
     loadCategoryData();
   }, [categoryFromUrl, showNotification]);
-  
-  // Log categories state changes
-  useEffect(() => {
-    console.log("=== Categories State Changed ===");
-    console.log("Categories count:", categories.length);
-    console.log("Categories:", categories);
-  }, [categories]);
 
   // Đồng bộ selectedBrands với URL
   useEffect(() => {
@@ -264,8 +230,6 @@ export default function ProductsPage() {
         setBanners(categoryBanners);
         return;
       }
-
-      console.log("No category-specific banners found. Falling back to default banners.");
       const defaultBanners = await bannerService.getBanners();
       setBanners(defaultBanners);
     } catch (error) {
@@ -276,7 +240,10 @@ export default function ProductsPage() {
 
   const fetchPromotionProducts = async (categorySlug: string) => {
     try {
-      const apiProducts = await productService.getProductPromotions(categorySlug, { limit: 12 });
+      const apiProducts = await productService.getProductPromotions(
+        categorySlug,
+        { limit: 12 }
+      );
       // Map products từ API format sang frontend format
       const mappedProducts = apiProducts.map(mapProductFromApi);
       setPromotionProducts(mappedProducts);
@@ -352,7 +319,10 @@ export default function ProductsPage() {
       {/* Promotion Products Section */}
       {promotionProducts.length > 0 && (
         <div className="mt-5">
-          <Promotion products={promotionProducts} onAddToCart={handleAddToCart} />
+          <Promotion
+            products={promotionProducts}
+            onAddToCart={handleAddToCart}
+          />
         </div>
       )}
 
@@ -374,13 +344,13 @@ export default function ProductsPage() {
             />
             {currentCategory?.description && (
               <div className="mt-8">
-                <Article 
+                <Article
                   article={{
                     id: 1,
                     title: `${currentCategory.name} là gì?`,
                     content: currentCategory.description,
-                  }} 
-                  variant="compact" 
+                  }}
+                  variant="compact"
                 />
               </div>
             )}

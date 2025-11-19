@@ -33,7 +33,7 @@ interface NotificationDrawerProps {
 }
 
 export function NotificationDrawer({ filter }: NotificationDrawerProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const { showNotification } = useNotification();
   const [isOpen, setIsOpen] = useState(false);
@@ -50,11 +50,14 @@ export function NotificationDrawer({ filter }: NotificationDrawerProps) {
 
       try {
         setLoading(true);
-        const response = await notificationService.getMyNotifications({
-          page: pageNum,
-          limit: 20,
-        });
-        const newNotifications = response.notifications || [];
+        const response =
+          user?.role === "staff"
+            ? await notificationService.getNotificationForStaff()
+            : await notificationService.getMyNotifications({
+                page: pageNum,
+                limit: 20,
+              });
+        const newNotifications = response?.notifications || [];
 
         if (append) {
           setNotifications((prev) => [...prev, ...newNotifications]);
@@ -78,7 +81,10 @@ export function NotificationDrawer({ filter }: NotificationDrawerProps) {
   const fetchUnreadCount = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const count = await notificationService.getUnreadCount();
+      const count =
+        user?.role === "staff"
+          ? await notificationService.getUnreadCountForStaff()
+          : await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch (error) {
       console.error("Error fetching unread count:", error);
@@ -207,10 +213,36 @@ export function NotificationDrawer({ filter }: NotificationDrawerProps) {
         fetchUnreadCount();
       };
 
+      const handleNewOrder = (payload: {
+        notificationId?: string;
+        type?: string;
+        title?: string;
+        message?: string;
+        link?: string;
+        actor?: { id: string; name: string; avatar?: string };
+        metadata?: { order_id?: string; customer_name?: string };
+      }) => {
+        // Show popup notification
+        if (payload.title) {
+          showNotification({
+            type: "info",
+            title: payload.title,
+            message:
+              payload.message ||
+              `Đơn hàng ${payload.metadata?.order_id} từ ${payload.actor?.name} - ${payload.actor?.id}`,
+            duration: 5000,
+          });
+        }
+
+        fetchNotifications(1);
+        fetchUnreadCount();
+      };
+
       socket.on("notification:new", handleNewNotification);
       socket.on("notification:comment-reply", handleCommentReply);
       socket.on("notification:unread-count", handleUnreadCountUpdate);
       socket.on("order:status-updated", handleOrderStatusUpdate);
+      socket.on("staff:new-order", handleNewOrder);
 
       // Cleanup listeners
       return () => {
@@ -218,6 +250,7 @@ export function NotificationDrawer({ filter }: NotificationDrawerProps) {
         socket.off("notification:comment-reply", handleCommentReply);
         socket.off("notification:unread-count", handleUnreadCountUpdate);
         socket.off("order:status-updated", handleOrderStatusUpdate);
+        socket.off("staff:new-order", handleNewOrder);
       };
     } catch (error) {
       console.error("Failed to setup socket listeners:", error);
@@ -235,7 +268,11 @@ export function NotificationDrawer({ filter }: NotificationDrawerProps) {
     try {
       // Mark as read if not already
       if (!notification.is_read) {
-        await notificationService.markAsRead(notification._id);
+        if (user?.role === "staff") {
+          await notificationService.markAsReadForStaff(notification._id);
+        } else {
+          await notificationService.markAsRead(notification._id);
+        }
         // Update local state
         setNotifications((prev) =>
           prev.map((n) =>

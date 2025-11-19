@@ -15,7 +15,7 @@ class BannerService {
     if (!banner) {
       return null as any;
     }
-    
+
     const transformed: Banner = {
       id: banner._id || banner.id || "",
       _id: banner._id,
@@ -26,13 +26,13 @@ class BannerService {
       link: banner.link,
       category_id: banner.category_id ? String(banner.category_id) : undefined,
     };
-    
+
     // Validate: banner phải có ít nhất image_url hoặc image
     if (!transformed.image_url && !transformed.image) {
       console.warn("Banner missing image:", banner);
       return null as any;
     }
-    
+
     return transformed;
   }
 
@@ -42,7 +42,7 @@ class BannerService {
    */
   async getBanners(categorySlug?: string): Promise<Banner[]> {
     try {
-      const url = categorySlug 
+      const url = categorySlug
         ? `${this.basePath}?category=${encodeURIComponent(categorySlug)}`
         : this.basePath;
       const response = await api.get<any[]>(url);
@@ -51,29 +51,40 @@ class BannerService {
         .map((banner) => this.transformBanner(banner))
         .filter((banner) => banner !== null); // Lọc bỏ các banner không hợp lệ
       if (categorySlug && transformed.length === 0) {
-        console.warn(`[BannerService] ⚠️ No banners found for category slug: "${categorySlug}"`);
+        console.warn(
+          `[BannerService] ⚠️ No banners found for category slug: "${categorySlug}"`
+        );
         console.warn(`[BannerService] This might mean:`);
         console.warn(`  1. No banners exist in database for this category`);
-        console.warn(`  2. Category slug "${categorySlug}" doesn't match any category in database`);
-        console.warn(`  3. All banners for this category are inactive or deleted`);
+        console.warn(
+          `  2. Category slug "${categorySlug}" doesn't match any category in database`
+        );
+        console.warn(
+          `  3. All banners for this category are inactive or deleted`
+        );
       }
-      
+
       return transformed;
     } catch (error: any) {
-      console.error(`[BannerService] ❌ Error fetching banners for category "${categorySlug}":`, error);
+      console.error(
+        `[BannerService] ❌ Error fetching banners for category "${categorySlug}":`,
+        error
+      );
       console.error(`[BannerService] Error details:`, {
         message: error?.message,
         response: error?.response?.data,
         status: error?.response?.status,
         url: error?.config?.url,
       });
-      
+
       // Nếu là lỗi 404 (category not found), trả về mảng rỗng thay vì throw
       if (error?.response?.status === 404) {
-        console.warn(`[BannerService] Category not found (404), returning empty array`);
+        console.warn(
+          `[BannerService] Category not found (404), returning empty array`
+        );
         return [];
       }
-      
+
       throw error;
     }
   }
@@ -90,4 +101,3 @@ class BannerService {
 }
 
 export default new BannerService();
-

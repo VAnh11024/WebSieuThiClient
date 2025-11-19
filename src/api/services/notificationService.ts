@@ -87,6 +87,21 @@ class NotificationService {
     }
   }
 
+  async getUnreadCountForStaff(): Promise<number> {
+    try {
+      const response = await api.get<UnreadCountResponse>(
+        `${this.basePath}/staff/unread-count`
+      );
+      return response.data.unreadCount;
+    } catch (error) {
+      console.error(
+        "[NotificationService] Error fetching unread count for staff:",
+        error
+      );
+      return 0;
+    }
+  }
+
   /**
    * Lấy chi tiết một thông báo
    */
@@ -99,6 +114,21 @@ class NotificationService {
     } catch (error) {
       console.error(
         `[NotificationService] Error fetching notification ${id}:`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  async getNotificationForStaff(): Promise<NotificationsResponse> {
+    try {
+      const response = await api.get<NotificationsResponse>(
+        `${this.basePath}/staff`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        `[NotificationService] Error fetching notification for staff:`,
         error
       );
       throw error;
@@ -123,6 +153,20 @@ class NotificationService {
     }
   }
 
+  async markAsReadForStaff(id: string): Promise<NotificationData> {
+    try {
+      const response = await api.patch<NotificationData>(
+        `${this.basePath}/staff/${id}/read`
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        `[NotificationService] Error marking notification ${id} as read for staff:`,
+        error
+      );
+      throw error;
+    }
+  }
   /**
    * Đánh dấu tất cả thông báo là đã đọc
    */

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { MessageSquare } from "lucide-react";
 import StaffService, {
   type StaffConversation,
@@ -136,14 +136,14 @@ export function ConversationList({ search }: ConversationListProps) {
                 {/* Last Message */}
                 <div className="col-span-4">
                   <div className="flex items-center gap-2">
-                    {conv.unread_count > 0 && (
+                    {/*{conv.unread_count > 0 && (
                       <Badge
                         variant="default"
                         className="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center p-0"
                       >
                         {conv.unread_count}
                       </Badge>
-                    )}
+                    )}*/}
                     <p className="text-sm text-foreground truncate">
                       {conv.sender_type === "STAFF"
                         ? `Bạn: ${conv.last_message}`
