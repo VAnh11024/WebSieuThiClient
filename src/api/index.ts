@@ -9,9 +9,17 @@ export { default as api } from "./axiosConfig";
 
 // Export services
 export { default as authService } from "./services/authService";
+export { default as userService } from "./services/userService";
 export { default as categoryService } from "./services/catalogService";
 export { default as productService } from "./services/productService";
 export { default as cartService } from "./services/cartService";
+export { default as commentService } from "./services/commentService";
+export { default as addressService } from "./services/addressService";
+export { default as bannerService } from "./services/bannerService";
+export { default as ratingService } from "./services/ratingService";
+export { default as orderService } from "./services/orderService";
+export { default as brandService } from "./services/brandService";
+export { default as comboService } from "./services/comboService";
 
 // Export types
 export type * from "./types";

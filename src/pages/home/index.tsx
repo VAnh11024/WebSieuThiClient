@@ -1,81 +1,116 @@
+import { useState, useEffect } from "react";
 import { CategoryNav } from "@/components/category/CategoryNav";
 import MainBanner from "@/components/home/MainBanner";
-import CategorySection from "@/components/home/CategorySection";
-import { mainBanners, sampleProductsByCategory, categoryBanners } from "@/lib/sampleData";
-import type { Product } from "@/types/product.type";
+import CategoryProductsSection from "@/components/category/CategoryProductsSection";
 import { useCart } from "@/components/cart/CartContext";
+import DailyMarket from "@/components/home/DailyMarket";
+import { categoryService, bannerService } from "@/api";
+import { getProductId, getProductImage } from "@/lib/constants";
+import type { Product } from "@/types";
+import type { Banner } from "@/types/banner.type";
+
+interface Category {
+  _id?: string;
+  id?: string;
+  name: string;
+  slug: string;
+}
 
 export default function HomePage() {
   const { addToCart } = useCart();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [mainBanners, setMainBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddToCart = (product: Product & { selectedQuantity?: number }) => {
+  // Fetch categories và main banners
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Lấy danh sách categories
+        const categoriesData = await categoryService.getRootCategories();
+        setCategories(categoriesData);
+        
+        // Lấy main banners (không có category - lấy tất cả banners active)
+        try {
+          const banners = await bannerService.getBanners(); // Không truyền categorySlug để lấy tất cả
+          setMainBanners(banners);
+        } catch (error) {
+          console.error("Error fetching main banners:", error);
+          setMainBanners([]);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleAddToCart = (
+    product: Product & { selectedQuantity?: number }
+  ) => {
     // Chuyển đổi Product sang CartItem
     addToCart({
-      id: product.id.toString(),
+      id: getProductId(product),
       name: product.name,
-      price: product.final_price,
-      image: product.image_url,
-      unit: product.quantity || "1 sản phẩm",
+      price: product.final_price || product.unit_price,
+      image: getProductImage(product),
+      unit: product.unit || "1 sản phẩm",
       quantity: product.selectedQuantity || 1,
     });
-    
-    // Hiển thị thông báo đã thêm vào giỏ hàng
-    console.log("Đã thêm vào giỏ hàng:", product.name, "x", product.selectedQuantity || 1);
+
+    // TODO: Hiển thị thông báo đã thêm vào giỏ hàng
   };
 
-  // const handleCategorySelect = (category: { id: string; name: string }) => {
-  //   console.log("Đã chọn loại:", category.name);
-  // };
-
-
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-blue-50 w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-blue-50">
-      <div className="container mx-auto px-4">
-        <div className="w-full bg-white rounded-lg overflow-hidden mb-1">
+    <div className="min-h-screen bg-blue-50 w-full">
+      <div className="w-full">
+        <div className="w-full bg-white overflow-hidden mb-1">
           <CategoryNav />
         </div>
       </div>
 
-      <div className="container mx-auto py-1">
-
-
+      <div className="w-full">
         {/* Main Banner */}
         <MainBanner banners={mainBanners} />
 
-        {/* Category Sections */}
+        {/* Daily Market Section - Đi chợ mỗi ngày */}
+        <DailyMarket />
+
+        {/* Category Sections - Hiển thị TẤT CẢ danh mục cấp 1 từ API */}
         <div className="space-y-1 sm:space-y-2">
-          {/* THỊT, CÁ, TRỨNG, HẢI SẢN */}
-          <CategorySection
-            categoryName="THỊT, CÁ, TRỨNG, HẢI SẢN"
-            products={sampleProductsByCategory["thit-ca-trung-hai-san"] || []}
-            banners={categoryBanners}
+          {categories.map((category) => (
+            <CategoryProductsSection
+              key={category._id || category.id}
+              title={category.name}
+              categorySlug={category.slug}
             onAddToCart={handleAddToCart}
           />
-
-          {/* RAU, CỦ, NẤM, TRÁI CÂY */}
-          <CategorySection
-            categoryName="RAU, CỦ, NẤM, TRÁI CÂY"
-            products={sampleProductsByCategory["rau-cu-nam-trai-cay"] || []}
-            banners={categoryBanners}
-            onAddToCart={handleAddToCart}
-          />
-
-          {/* DẦU ĂN, NƯỚC CHẤM, GIA VỊ */}
-          <CategorySection
-            categoryName="DẦU ĂN, NƯỚC CHẤM, GIA VỊ"
-            products={sampleProductsByCategory["dau-an-nuoc-cham-gia-vi"] || []}
-            banners={categoryBanners}
-            onAddToCart={handleAddToCart}
-          />
-
-          {/* MÌ, MIẾN, CHÁO, PHỞ */}
-          <CategorySection
-            categoryName="MÌ, MIẾN, CHÁO, PHỞ"
-            products={sampleProductsByCategory["mi-mien-chao-pho"] || []}
-            banners={categoryBanners}
-            onAddToCart={handleAddToCart}
-          />
+          ))}
+          
+          {/* Hiển thị message nếu chưa có categories */}
+          {categories.length === 0 && (
+            <div className="bg-white rounded-lg p-8 text-center">
+              <p className="text-gray-500">
+                Chưa có danh mục sản phẩm. Vui lòng thêm danh mục trong trang quản trị.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

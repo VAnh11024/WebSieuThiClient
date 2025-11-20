@@ -1,10 +1,24 @@
+import { useEffect } from "react";
 import { CategorySidebar } from "@/components/category/CategorySideBar";
-import { Footer } from "@/components/Footer";
-import { Navbar } from "@/components/Navbar/Navbar";
-import { ScrollToTop } from "@/components/ScrollToTop";
-import { Outlet } from "react-router-dom";
+import { Footer } from "@/components/navbar-and-footer/Footer";
+import { Navbar } from "@/components/navbar-and-footer/Navbar";
+import { ScrollToTop } from "@/components/scroll/ScrollToTop";
+import { ChatWidget } from "@/components/chat/ChatWidget";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/stores/authStore";
 
 export default function MainLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    const role = user?.role?.toLowerCase?.();
+    if (role === "staff" && !location.pathname.startsWith("/staff")) {
+      navigate("/staff/orders", { replace: true });
+    }
+  }, [user, navigate, location.pathname]);
+
   return (
     <div className="main-layout w-full bg-[#e9edf0] pb-4">
       <ScrollToTop />
@@ -16,6 +30,8 @@ export default function MainLayout() {
           <Footer />
         </main>
       </div>
+      {/* Chat Widget - Fixed position at bottom right */}
+      <ChatWidget />
     </div>
   );
 }

@@ -1,118 +1,74 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Star, ThumbsUp } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { Product } from "@/types/product.type";
 import { ProductModal } from "@/components/products/ProductModal";
 import Banners from "@/components/productPage/banner/Banners";
 import type { Banner } from "@/types/banner.type";
-import type { Review, RatingSummary } from "@/types/review.type";
-import ScrollButton from "@/components/ScrollButton";
-import { Link } from "react-router-dom";
-
-// Sample product data
-const productData = {
-  id: 1,
-  name: "Xúc xích xông khói Superwao Ponnie gói 450g",
-  price: 79000,
-  images: [
-    "https://cdnv2.tgdd.vn/bhx-static/bhx/Products/Images/7618/324898/bhx/xuc-xich-xong-khoi-superwao-meatdeli-goi-450g_202504150922175954.jpg",
-    "https://cdnv2.tgdd.vn/bhx-static/bhx/Products/Images/7618/324898/bhx/xuc-xich-xong-khoi-superwao-meatdeli-goi-450g_202505281430420275.jpg",
-    "https://cdn.tgdd.vn/Products/Images/7618/324898/bhx/xuc-xich-xong-khoi-superwao-meatdeli-goi-450g-202407250924276879.jpg",
-    "https://cdn.tgdd.vn/Products/Images/7618/324898/bhx/xuc-xich-xong-khoi-superwao-meatdeli-goi-450g-202407250924218161.jpg",
-    "https://cdnv2.tgdd.vn/bhx-static/bhx/Products/Images/2282/77606/bhx/fmcg_202502061015026509.jpg",
-  ],
-  shipping: {
-    seller: "Công ty TNHH Thực phẩm ABC",
-    location: "Hà Nội",
-    shippingFee: "Miễn phí vận chuyển cho đơn hàng từ 300.000₫",
-  },
-  specifications: {
-    "Loại sản phẩm": "Xúc xích xông khói",
-    "Khối lượng": "450g",
-    "Thành phần":
-      "Thịt lợn, gia vị, chất bảo quản, chất tạo màu, chất điều vị, muối, đường, tỏi, hành, ớt",
-    "Hạn sử dụng": "Thịt ướp lạnh: Dưới 4°C, Thịt đông lạnh: Dưới -18°C",
-    "Cách dùng": "Rã đông trước khi chế biến, nướng, luộc, chiên đều được",
-    "Bảo quản": "Để ngăn mát tủ lạnh từ 0-4°C hoặc đông lạnh dưới -18°C",
-    "Thương hiệu": "Ponnie (CLAS)",
-    "Xuất xứ": "Việt Nam",
-  },
-};
-
-// Sample banners (dùng các link từ pages/products/index.tsx)
-const productBanners: Banner[] = [
-  {
-    id: 1,
-    name: "Banner 1",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc_202510091649049889.jpg",
-    link_url: "/ ",
-  },
-  {
-    id: 2,
-    name: "Banner 2",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/freecompress-trang-cate-pc-1_202508190846166252.jpg",
-    link_url: "/ ",
-  },
-  {
-    id: 3,
-    name: "Banner 3",
-    image_url:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/7890/trang-cate-pc202507042338493733_202508121546495641.jpg",
-    link_url: "/ ",
-  },
-];
-
-// Sample rating summary
-const ratingSummary: RatingSummary = {
-  average_rating: 4.5,
-  total_reviews: 17,
-  rating_distribution: {
-    5: 82,
-    4: 6,
-    3: 0,
-    2: 0,
-    1: 12,
-  },
-};
-
-// Sample reviews
-const reviews: Review[] = [
-  {
-    id: 1,
-    user_name: "Hoàng Thị Quý",
-    rating: 5,
-    comment: "ngon và thơm",
-    created_at: "2024-10-20",
-    helpful_count: 0,
-  },
-  {
-    id: 2,
-    user_name: "Duyên",
-    rating: 5,
-    comment: "Xúc xích thơm ngon ăn 1cây lại muốn ăn nữa",
-    created_at: "2024-10-18",
-    helpful_count: 0,
-  },
-  {
-    id: 3,
-    user_name: "Phùng Thị Ngân",
-    rating: 5,
-    comment: "Trên cả tuyệt vời mn nên mua nhé",
-    created_at: "2024-10-15",
-    helpful_count: 0,
-  },
-];
+import ScrollButton from "@/components/scroll/ScrollButton";
+import { Link, useParams } from "react-router-dom";
+import ProductComments from "@/components/products/ProductComments";
+import ProductRatings from "@/components/products/ProductRatings";
+import { productService, bannerService } from "@/api";
+import {
+  PRODUCT_PLACEHOLDER_IMAGE,
+  getProductId,
+  getProductImage,
+} from "@/lib/constants";
+import { useCart } from "@/components/cart/CartContext";
+import SuggestedDishes from "@/components/products/SuggestedDishes";
 
 export default function ProductDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const thumbsRef = useRef<HTMLDivElement | null>(null);
   const [isMouseOver, setIsMouseOver] = useState(false);
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(true);
-  const [helpfulReviews, setHelpfulReviews] = useState<Set<number>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
+  const { addToCart } = useCart();
+
+  // Get product ID from URL params
+  const productId = id || "";
+
+  // Load product data
+  useEffect(() => {
+    const loadProductData = async () => {
+      if (!productId) {
+        console.log("❌ No productId provided");
+        return;
+      }
+
+      console.log("🔍 Loading product with ID:", productId);
+
+      try {
+        setLoading(true);
+        const [productData, bannersData] = await Promise.all([
+          productService.getProductById(productId),
+          bannerService.getAllBanners(),
+        ]);
+
+        console.log("✅ Product loaded:", productData);
+        console.log("✅ Banners loaded:", bannersData);
+
+        setProduct(productData);
+        setBanners(bannersData || []);
+        setImageErrors({}); // Reset image errors khi load product mới
+      } catch (error: any) {
+        console.error("❌ Error loading product:", error);
+        console.error("❌ Error response:", error.response?.data);
+        console.error("❌ Error status:", error.response?.status);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProductData();
+  }, [productId]);
 
   // Check scroll position for navigation buttons
   const checkScroll = () => {
@@ -135,6 +91,25 @@ export default function ProductDetail() {
       });
     }
   };
+
+  // Get product images
+  // LƯU Ý: Backend có thể trả về image_primary là mảng [String] hoặc string
+  const getFirstImage = (
+    img: string | string[] | undefined
+  ): string | undefined => {
+    if (!img) return undefined;
+    if (Array.isArray(img)) return img[0];
+    return img;
+  };
+
+  const productImages = product
+    ? ([
+        getFirstImage(product.image_primary) ||
+          getFirstImage(product.image_url),
+        // Thêm các ảnh phụ từ mảng images
+        ...(product.images || []),
+      ].filter(Boolean) as string[])
+    : [];
 
   // Keep active thumbnail in view (only scroll horizontally to avoid page jump)
   useEffect(() => {
@@ -177,16 +152,15 @@ export default function ProductDetail() {
   }, [isMouseOver]);
 
   const goPrevImage = () => {
-    if (!productData.images.length) return;
+    if (!productImages.length) return;
     setSelectedImage(
-      (prev) =>
-        (prev - 1 + productData.images.length) % productData.images.length
+      (prev) => (prev - 1 + productImages.length) % productImages.length
     );
   };
 
   const goNextImage = () => {
-    if (!productData.images.length) return;
-    setSelectedImage((prev) => (prev + 1) % productData.images.length);
+    if (!productImages.length) return;
+    setSelectedImage((prev) => (prev + 1) % productImages.length);
   };
 
   const formatPrice = (price: number) => {
@@ -196,185 +170,231 @@ export default function ProductDetail() {
     }).format(price);
   };
 
-  const toSlug = (text: string) =>
-    text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}+/gu, "")
-      .replace(/[^a-z0-9\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-");
-
-  // Map dữ liệu mẫu sang kiểu Product cho ProductModal
-  const productForModal: Product = {
-    id: productData.id,
-    name: productData.name,
-    description: "",
-    unit_price: productData.price,
-    final_price: productData.price,
-    stock_quantity: 100,
-    discount_percent: 0,
-    is_hot: false,
-    image_url: productData.images[0] ?? "",
-    slug: toSlug(productData.name),
-    quantity: "1 gói",
-  };
-
   const handleAddToCart = (product: Product, quantity: number) => {
-    // TODO: Tích hợp giỏ hàng thật; tạm thời log để kiểm tra
-    console.log("Add to cart:", { product, quantity });
-  };
-
-  const handleHelpfulClick = (reviewId: number) => {
-    setHelpfulReviews((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(reviewId)) {
-        newSet.delete(reviewId);
-      } else {
-        newSet.add(reviewId);
-      }
-      return newSet;
+    // Chuyển đổi Product sang CartItem và thêm vào giỏ hàng
+    addToCart({
+      id: getProductId(product),
+      name: product.name,
+      price: product.final_price || product.unit_price,
+      image: getProductImage(product),
+      unit: product.unit || "1 sản phẩm",
+      quantity: quantity,
     });
   };
 
-  const renderStars = (rating: number, size: "sm" | "lg" = "sm") => {
-    const sizeClass = size === "lg" ? "w-6 h-6" : "w-4 h-4";
+  // Loading state
+  if (loading) {
     return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`${sizeClass} ${
-              star <= rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "fill-gray-200 text-gray-200"
-            }`}
-          />
-        ))}
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#007E42] mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải thông tin sản phẩm...</p>
+        </div>
       </div>
     );
-  };
+  }
+
+  // Error state
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Không tìm thấy sản phẩm
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
+          </p>
+          <Link to="/">
+            <Button className="bg-[#007E42] hover:bg-[#005a2f]">
+              Quay về trang chủ
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-blue-50">
       {/* Back button - match CartWithItems */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-10 shadow-sm">
+        <div className="max-w-7xl mx-auto px-1 py-2 flex items-center">
           <Link
             to="/"
-            className="mr-4 hover:bg-gray-100 p-2 rounded-full transition-colors"
+            className="mr-2 hover:bg-gray-100 p-2 rounded-full transition-all duration-200 hover:scale-105"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-3 h-3 text-gray-700" />
           </Link>
-          <h1 className="text-xl font-semibold text-gray-800">
-            Quay Về
-          </h1>
+          <h1 className="text-xl font-bold text-gray-800">Quay Về</h1>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-1 py-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Left Column - Images */}
-          <div className="space-y-4 lg:col-span-2">
+          <div className="space-y-2 lg:col-span-2">
             {/* Main Image */}
-            <div className="relative bg-white rounded-lg overflow-hidden border h-[60vh] max-h-screen">
-              <img
-                src={productData.images[selectedImage] || "/placeholder.svg"}
-                alt={productData.name}
-                className="w-full h-full object-contain p-6"
-              />
-              {/* Navigation Buttons for main image */}
-              <ScrollButton direction="left" onClick={goPrevImage} />
-              <ScrollButton direction="right" onClick={goNextImage} />
-            </div>
+            {productImages.length > 0 && (
+              <div className="relative bg-white rounded-lg overflow-hidden border h-[60vh] max-h-screen">
+                <img
+                  src={
+                    imageErrors[selectedImage]
+                      ? PRODUCT_PLACEHOLDER_IMAGE
+                      : productImages[selectedImage] ||
+                        PRODUCT_PLACEHOLDER_IMAGE
+                  }
+                  alt={product.name}
+                  className="w-full h-full object-contain p-6"
+                  onError={() => {
+                    setImageErrors((prev) => ({
+                      ...prev,
+                      [selectedImage]: true,
+                    }));
+                  }}
+                />
+                {/* Navigation Buttons for main image */}
+                {productImages.length > 1 && (
+                  <>
+                    <ScrollButton direction="left" onClick={goPrevImage} />
+                    <ScrollButton direction="right" onClick={goNextImage} />
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Thumbnail Images */}
-            <div 
-              className="relative group/container"
-              onMouseEnter={() => setIsMouseOver(true)}
-              onMouseLeave={() => setIsMouseOver(false)}
-            >
-              {/* Scroll buttons - hiển thị khi hover */}
-              <div className="opacity-0 group-hover/container:opacity-100 transition-opacity">
-                {showLeftButton && (
-                  <ScrollButton direction="left" onClick={() => scroll("left")} />
-                )}
-                {showRightButton && (
-                  <ScrollButton direction="right" onClick={() => scroll("right")} />
-                )}
-              </div>
-
+            {productImages.length > 1 && (
               <div
-                ref={thumbsRef}
-                className="flex gap-2 overflow-x-auto overflow-y-hidden scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                className="relative group/container"
+                onMouseEnter={() => setIsMouseOver(true)}
+                onMouseLeave={() => setIsMouseOver(false)}
               >
-                {productData.images.map((image, index) => (
-                  <button
-                    key={index}
-                    data-thumb-index={index}
-                    onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-40 h-40 rounded-lg overflow-hidden transition-all border-2 select-none ${
-                      selectedImage === index
-                        ? "border-green-500"
-                        : "border-transparent hover:border-gray-300"
-                    }`}
-                    style={{ userSelect: 'none' }}
-                    onDragStart={(e) => e.preventDefault()}
-                  >
-                    <img
-                      src={image || "/placeholder.svg"}
-                      alt={`${productData.name} - ${index + 1}`}
-                      className={`w-full h-full object-cover transition-all select-none ${
-                        selectedImage === index
-                          ? "opacity-100"
-                          : "opacity-50 hover:opacity-70"
-                      }`}
-                      style={{ userSelect: 'none', pointerEvents: 'none' }}
-                      draggable={false}
+                {/* Scroll buttons - hiển thị khi hover */}
+                <div className="opacity-0 group-hover/container:opacity-100 transition-opacity">
+                  {showLeftButton && (
+                    <ScrollButton
+                      direction="left"
+                      onClick={() => scroll("left")}
                     />
-                  </button>
-                ))}
+                  )}
+                  {showRightButton && (
+                    <ScrollButton
+                      direction="right"
+                      onClick={() => scroll("right")}
+                    />
+                  )}
+                </div>
+
+                <div
+                  ref={thumbsRef}
+                  className="flex gap-2 overflow-x-auto overflow-y-hidden scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                >
+                  {productImages.map((image, index) => (
+                    <button
+                      key={index}
+                      data-thumb-index={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`flex-shrink-0 w-40 h-40 rounded-lg overflow-hidden transition-all border-2 select-none ${
+                        selectedImage === index
+                          ? "border-green-500"
+                          : "border-transparent hover:border-gray-300"
+                      }`}
+                      style={{ userSelect: "none" }}
+                      onDragStart={(e) => e.preventDefault()}
+                    >
+                      <img
+                        src={
+                          imageErrors[index]
+                            ? PRODUCT_PLACEHOLDER_IMAGE
+                            : image || PRODUCT_PLACEHOLDER_IMAGE
+                        }
+                        alt={`${product.name} - ${index + 1}`}
+                        className={`w-full h-full object-cover transition-all select-none ${
+                          selectedImage === index
+                            ? "opacity-100"
+                            : "opacity-50 hover:opacity-70"
+                        }`}
+                        style={{ userSelect: "none", pointerEvents: "none" }}
+                        draggable={false}
+                        onError={() => {
+                          setImageErrors((prev) => ({
+                            ...prev,
+                            [index]: true,
+                          }));
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Right Column - Product Info (Sticky) */}
-          <div className="lg:sticky lg:top-4 lg:self-start">
-            <div className="bg-white rounded-lg p-6 space-y-6">
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 p-5 space-y-4">
               {/* Product Name */}
               <h1 className="text-2xl font-semibold text-gray-900">
-                {productData.name}
+                {product.name}
               </h1>
 
               {/* Price */}
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-3">
                 <span className="text-3xl font-bold text-red-600">
-                  {formatPrice(productData.price)}
+                  {formatPrice(product.final_price || product.unit_price)}
                 </span>
+                {product.discount_percent > 0 && (
+                  <>
+                    <span className="text-lg text-gray-400 line-through">
+                      {formatPrice(product.unit_price)}
+                    </span>
+                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-sm font-semibold">
+                      -{product.discount_percent}%
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Stock Status */}
+              <div className="flex items-center gap-2">
+                {product.stock_status === "in_stock" && product.quantity > 0 ? (
+                  <span className="text-green-600 font-medium">
+                    ✓ Còn hàng ({product.quantity} sản phẩm)
+                  </span>
+                ) : (
+                  <span className="text-red-600 font-medium">✗ Hết hàng</span>
+                )}
               </div>
 
               {/* Buy Button */}
               <Button
                 onClick={() => setIsModalOpen(true)}
-                className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-lg font-semibold"
+                disabled={
+                  product.stock_status !== "in_stock" || product.quantity <= 0
+                }
+                className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-lg font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                MUA
+                {product.stock_status === "in_stock" && product.quantity > 0
+                  ? "MUA"
+                  : "HẾT HÀNG"}
               </Button>
 
               {/* Special Offers */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                  🎁 ƯU ĐÃI ĐẶC BIỆT
-                </h3>
-                <ul className="space-y-1 text-sm text-gray-700">
-                  <li>• Mua 2 tặng 1 tiền</li>
-                  <li>• Giảm 10% cho đơn hàng từ 500.000₫</li>
-                </ul>
-              </div>
+              {product.discount_percent > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <h3 className="font-semibold text-gray-900 mb-1.5 text-sm">
+                    🎁 ƯU ĐÃI ĐẶC BIỆT
+                  </h3>
+                  <ul className="space-y-1 text-xs text-gray-700">
+                    <li>• Mua 2 tặng 1 tiền</li>
+                    <li>• Giảm 10% cho đơn hàng từ 500.000₫</li>
+                  </ul>
+                </div>
+              )}
 
               {/* Shipping Info */}
-              <div className="border-t pt-4 space-y-3">
+              <div className="border-t pt-3 space-y-2">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-green-600 text-xl">🚚</span>
@@ -382,7 +402,7 @@ export default function ProductDetail() {
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">Giao hàng</p>
                     <p className="text-sm text-gray-600">
-                      {productData.shipping.shippingFee}
+                      Miễn phí vận chuyển cho đơn hàng từ 300.000₫
                     </p>
                   </div>
                 </div>
@@ -394,11 +414,9 @@ export default function ProductDetail() {
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">Đơn vị bán</p>
                     <p className="text-sm text-gray-600">
-                      {productData.shipping.seller}
+                      Công ty TNHH Thực phẩm ABC
                     </p>
-                    <p className="text-sm text-gray-500">
-                      {productData.shipping.location}
-                    </p>
+                    <p className="text-sm text-gray-500">Hà Nội</p>
                   </div>
                 </div>
               </div>
@@ -406,134 +424,109 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* Banners dưới hình ảnh, trước thông tin sản phẩm */}
-        <div className="mt-6">
-          <Banners banners={productBanners} />
-        </div>
+        {/* Banners */}
+        {banners.length > 0 && (
+          <div className="mt-4">
+            <Banners banners={banners} />
+          </div>
+        )}
 
         {/* Product Specifications */}
-        <div className="mt-8 bg-white rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <div className="mt-4 bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 p-5">
+          <h2 className="text-lg font-bold text-gray-900 mb-3">
             Thông tin sản phẩm
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full">
               <tbody>
-                {Object.entries(productData.specifications).map(
-                  ([key, value], index) => (
-                    <tr
-                      key={key}
-                      className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
-                    >
-                      <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
-                        {key}
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">{value}</td>
-                    </tr>
-                  )
+                <tr className="bg-gray-50">
+                  <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
+                    Tên sản phẩm
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{product.name}</td>
+                </tr>
+                {product.unit && (
+                  <tr className="bg-white">
+                    <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
+                      Đơn vị
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">{product.unit}</td>
+                  </tr>
                 )}
+                <tr className={product.unit ? "bg-gray-50" : "bg-white"}>
+                  <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
+                    Giá
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">
+                    {formatPrice(product.unit_price)}
+                  </td>
+                </tr>
+                {product.discount_percent > 0 && (
+                  <tr className={product.unit ? "bg-white" : "bg-gray-50"}>
+                    <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
+                      Giảm giá
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">
+                      {product.discount_percent}%
+                    </td>
+                  </tr>
+                )}
+                <tr
+                  className={
+                    product.discount_percent > 0
+                      ? product.unit
+                        ? "bg-gray-50"
+                        : "bg-white"
+                      : product.unit
+                      ? "bg-white"
+                      : "bg-gray-50"
+                  }
+                >
+                  <td className="py-3 px-4 font-medium text-gray-700 w-1/3">
+                    Trạng thái
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">
+                    {product.stock_status === "in_stock"
+                      ? "Còn hàng"
+                      : product.stock_status === "out_of_stock"
+                      ? "Hết hàng"
+                      : "Đặt trước"}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Product Reviews */}
-        <div className="mt-8 bg-white rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Đánh giá sản phẩm
-          </h2>
+        {/* Suggested Dishes - Món ăn gợi ý */}
+        {product && <SuggestedDishes productName={product.name} />}
 
-          {/* Rating Summary */}
-          <div className="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b">
-            {/* Average Rating */}
-            <div className="flex flex-col items-center justify-center md:w-1/3 bg-gray-50 rounded-lg p-6">
-              <div className="text-5xl font-bold text-gray-900 mb-2">
-                {ratingSummary.average_rating.toFixed(1)}
-              </div>
-              {renderStars(Math.round(ratingSummary.average_rating), "lg")}
-              <div className="text-sm text-gray-600 mt-2">
-                <span className="text-blue-600 font-medium">
-                  {ratingSummary.total_reviews} đánh giá
-                </span>
-              </div>
-            </div>
+        {/* Product Ratings (với form đánh giá) */}
+        <div className="mt-4">
+          <ProductRatings productId={productId} />
+        </div>
 
-            {/* Rating Distribution */}
-            <div className="flex-1 space-y-2">
-              {[5, 4, 3, 2, 1].map((stars) => {
-                const percentage = ratingSummary.rating_distribution[
-                  stars as keyof typeof ratingSummary.rating_distribution
-                ];
-                return (
-                  <div key={stars} className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 w-16">
-                      <span className="text-sm font-medium text-gray-700">
-                        {stars}
-                      </span>
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    </div>
-                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-yellow-400 rounded-full transition-all"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-gray-600 w-12 text-right">
-                      {percentage}%
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Reviews List */}
-          <div className="space-y-6">
-            {reviews.map((review) => (
-              <div key={review.id} className="border-b pb-6 last:border-b-0">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {review.user_name}
-                    </h3>
-                    {renderStars(review.rating)}
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-3">{review.comment}</p>
-                <button
-                  onClick={() => handleHelpfulClick(review.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    helpfulReviews.has(review.id)
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  <ThumbsUp
-                    className={`w-4 h-4 ${
-                      helpfulReviews.has(review.id) ? "fill-blue-700" : ""
-                    }`}
-                  />
-                  Hữu ích
-                </button>
-              </div>
-            ))}
-          </div>
+        {/* Product Comments (bình luận 2 cấp) */}
+        <div className="mt-4">
+          <ProductComments productId={productId} />
         </div>
       </div>
-      {/* Modal */}
-      <ProductModal
-        product={productForModal}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddToCart={handleAddToCart}
-      />
+
+      {/* Product Modal */}
+      {product && (
+        <ProductModal
+          product={{
+            ...product,
+            // Compatibility fields
+            image_url: product.image_primary || product.image_url,
+            stock_quantity: product.quantity,
+            price: product.unit_price,
+          }}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onAddToCart={handleAddToCart}
+        />
+      )}
     </div>
   );
-}
-
-// Render Modal
-// Lưu ý: Modal được đặt cuối cùng để không ảnh hưởng layout chính
-// và được điều khiển bằng state isModalOpen
-export function ProductDetailWithModalWrapper() {
-  return <ProductDetail />;
 }

@@ -29,15 +29,20 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: {
+  success: boolean;
+  accessToken?: string;
+  token?: string; // Backend trả về "token" thay vì "accessToken" trong register
+  user?: {
     id: string;
-    phoneNumber: string;
     name?: string;
     email?: string;
-    role: string;
+    phone?: string;
+    phoneNumber?: string; // Để backward compatible
+    role?: string;
+    isPhoneVerified?: boolean;
   };
+  requiresEmailVerification?: boolean;
+  message?: string;
 }
 
 export interface RegisterRequest {
@@ -45,6 +50,14 @@ export interface RegisterRequest {
   password: string;
   name?: string;
   email?: string;
+}
+
+export interface UpdateProfileRequest {
+  name?: string;
+  email?: string;
+  phoneNumber?: string;
+  gender?: "male" | "female";
+  avatarUrl?: string;
 }
 
 export interface RefreshTokenRequest {
@@ -64,12 +77,20 @@ export interface VerifyOtpRequest {
 // User Types
 export interface User {
   id: string;
-  phoneNumber: string;
+  _id?: string; // Backend MongoDB ID
   name?: string;
   email?: string;
-  role: string;
-  createdAt: string;
-  updatedAt: string;
+  phone?: string;
+  phoneNumber?: string; // Để backward compatible
+  gender?: "male" | "female";
+  role?: string;
+  avatar?: string; // Backend field name
+  avatarUrl?: string; // Alias for backward compatibility
+  isVerified?: boolean;
+  isPhoneVerified?: boolean;
+  emailVerifiedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Product Types (mở rộng từ types hiện tại)
@@ -128,4 +149,142 @@ export interface ErrorResponse {
       message?: string;
     };
   };
+}
+
+// Comment Types
+export interface CommentUser {
+  _id: string;
+  name: string;
+  avatar?: string;
+  email?: string;
+  role?: string;
+}
+
+export interface Comment {
+  _id: string;
+  product_id: string;
+  user_id: CommentUser | string;
+  content: string;
+  parent_id?: string | null;
+  reply_count?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface CommentResponse {
+  comments: Comment[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateCommentRequest {
+  product_id: string;
+  content: string;
+  parent_id?: string;
+}
+
+export interface UpdateCommentRequest {
+  content: string;
+}
+
+// Address Types
+export interface Address {
+  _id: string;
+  user_id: string;
+  full_name: string;
+  phone: string;
+  address: string; // Street address
+  ward: string; // Phường/Xã
+  district?: string; // Quận/Huyện (optional - mô hình 2 cấp: chỉ có Tỉnh và Xã)
+  city: string; // Tỉnh/Thành phố
+  zip_code?: string;
+  is_default: boolean;
+  is_active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateAddressDto {
+  full_name: string;
+  phone: string;
+  address: string;
+  ward: string;
+  district?: string; // Optional - mô hình 2 cấp: chỉ có Tỉnh và Xã
+  city: string;
+  zip_code?: string;
+  is_default?: boolean;
+  is_active?: boolean;
+}
+
+export interface UpdateAddressDto {
+  full_name?: string;
+  phone?: string;
+  address?: string;
+  ward?: string;
+  district?: string;
+  city?: string;
+  zip_code?: string;
+  is_default?: boolean;
+  is_active?: boolean;
+}
+
+export interface AddressResponse {
+  addresses: Address[];
+}
+
+// Notification Types
+export type NotificationType =
+  | "comment_reply"
+  | "order_update"
+  | "product_review"
+  | "system";
+
+export interface NotificationActor {
+  _id: string;
+  name: string;
+  avatar?: string;
+}
+
+export interface NotificationData {
+  _id: string;
+  user_id: string;
+  actor_id: string | NotificationActor;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link?: string;
+  reference_id?: string;
+  reference_type?: string;
+  metadata?: Record<string, unknown>;
+  is_read: boolean;
+  is_hidden: boolean;
+  is_deleted: boolean;
+  read_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationsResponse {
+  notifications: NotificationData[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  unreadCount: number;
+}
+
+export interface UnreadCountResponse {
+  unreadCount: number;
+}
+
+export interface QueryNotificationParams {
+  page?: number;
+  limit?: number;
+  type?: NotificationType;
+  is_read?: boolean;
+  unread_only?: boolean;
 }

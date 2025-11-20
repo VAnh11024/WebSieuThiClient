@@ -1,125 +1,14 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import ScrollButton from "@/components/ScrollButton";
+import ScrollButton from "@/components/scroll/ScrollButton";
 import { useNavigate } from "react-router-dom";
 import type { CategoryNav as Category, CategoryNavProps } from "@/types/category.type";
-
-const defaultCategories: Category[] = [
-  {
-    id: "khuyen-mai",
-    name: "KHUYẾN MÃI SỐC",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/flash-sale_202509181309465062.gif",
-    badgeColor: "bg-red-500",
-  },
-  {
-    id: "giat-xa",
-    name: "Giặt xả",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/frame-1984079259_202510011356076995.gif",
-    badgeColor: "bg-red-500",
-  },
-  {
-    id: "dau-an",
-    name: "Dầu ăn",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/dau-an-final_202510031117342125.gif",
-    badgeColor: "bg-green-600",
-  },
-  {
-    id: "gao-nep",
-    name: "Gạo, nếp",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/gao-nep_202509272332404857.gif",
-    badgeColor: "bg-purple-600",
-  },
-  {
-    id: "mi-an-lien",
-    name: "Mì ăn liền",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/gau-do_202510031119471876.gif",
-  },
-  {
-    id: "nuoc-suoi",
-    name: "Nước suối",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/nuoc-suoi1_202510010943414955.gif",
-    badgeColor: "bg-red-500",
-  },
-  {
-    id: "sua-chua",
-    name: "Sữa chu...",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/nuoc-suoi1_202510010943414955.gif",
-    badgeColor: "bg-green-600",
-  },
-  {
-    id: "rau-la",
-    name: "Rau lá",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/rau-la_202509272336201019.gif",
-    badgeColor: "bg-red-500",
-  },
-  {
-    id: "nuoc-tra",
-    name: "Nước trà",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/tra_202510081101058749.gif",
-    badgeColor: "bg-red-500",
-  },
-  {
-    id: "banh",
-    name: "Bánh snack",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/3364/frame-3476166_202503191335420491.png",
-  },
-  {
-    id: "ca-vien",
-    name: "Cà viên, bò viên",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/7170/1990403_202504021436547470.png",
-  },
-  {
-    id: "cu-qua",
-    name: "Củ, quả",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8785/rau-cu_202509251624277482.png",
-  },
-  {
-    id: "thit-heo",
-    name: "Thịt heo",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8781/thit-heo_202509110924556310.png",
-  },
-  {
-    id: "xuc-xich",
-    name: "Xúc xích, lạp xưởng tươi",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/7618/120x120-5_202410101421040963.png",
-  },
-  {
-    id: "keo-cung",
-    name: "Kẹo cứng",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/2687/keo-cung_202508291640443457.png",
-  },
-  {
-    id: "nam",
-    name: "Nấm các loại",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8779/8779-id_202504021437339917.png",
-  },
-  {
-    id: "trai-cay",
-    name: "Trái cây",
-    image:
-      "https://cdnv2.tgdd.vn/bhx-static/bhx/Category/Images/8788/trai-cay_202509081009396955.png",
-  },
-];
+import { categoryService } from "@/api";
+import { toCategoryNav, getCategoryImage } from "@/lib/constants";
 
 export function CategoryNav({
-  categories = defaultCategories,
+  categories: propCategories,
   selectedCategoryId,
   onCategorySelect,
   variant = "home",
@@ -129,7 +18,39 @@ export function CategoryNav({
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(true);
   const [isMouseOver, setIsMouseOver] = useState(false);
+  const [categories, setCategories] = useState<Category[]>(propCategories || []);
+  const [loading, setLoading] = useState(!propCategories);
   const navigate = useNavigate();
+
+  // Update categories khi propCategories thay đổi
+  useEffect(() => {
+    if (propCategories) {
+      setCategories(propCategories);
+      setLoading(false);
+    } else {
+      // Chỉ fetch từ API nếu không có propCategories
+      const fetchCategories = async () => {
+        try {
+          setLoading(true);
+          // Lấy root categories (cấp 1) từ API
+          const data = await categoryService.getRootCategories();
+          
+          // Convert sang CategoryNav format
+          const navCategories = data.map(toCategoryNav);
+          setCategories(navCategories);
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+          // Không có fallback data - hiển thị empty state
+          setCategories([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchCategories();
+    }
+  }, [propCategories]);
+
   const checkScroll = () => {
     const container = scrollContainerRef.current;
     if (container) {
@@ -176,13 +97,18 @@ export function CategoryNav({
 
   const handleCategoryClick = (category: Category) => {
     onCategorySelect?.(category);
-    navigate(`/products?category=${category.id}`);
+    // Dùng slug thay vì id để SEO friendly
+    navigate(`/products?category=${category.slug || category.id}`);
+  };
+
+  const handlePromotionClick = () => {
+    navigate("/khuyen-mai");
   };
 
   const getContainerStyles = () => {
     switch (variant) {
       case "product-page":
-        return "w-full bg-background rounded-lg";
+        return "w-full bg-background";
       case "home":
       default:
         return "w-full bg-background";
@@ -190,12 +116,13 @@ export function CategoryNav({
   };
 
   const getItemStyles = (category: Category) => {
-    const isSelected = selectedCategoryId === category.id;
+    // So sánh với slug hoặc id để hỗ trợ cả 2 cách
+    const isSelected = selectedCategoryId === category.slug || selectedCategoryId === category.id;
 
     switch (variant) {
       case "product-page":
         return `
-          flex flex-col items-center gap-3 min-w-[80px] group
+          flex flex-col items-center gap-2 min-w-[80px] group
           ${isSelected ? "ring-1 ring-green-500 ring-offset-1 rounded-lg" : ""}
         `;
       case "home":
@@ -217,15 +144,16 @@ export function CategoryNav({
   const getImageContainerStyles = () => {
     switch (variant) {
       case "product-page":
-        return "w-16 h-16 rounded-lg overflow-hidden  flex items-center justify-center transition-transform group-hover:scale-105";
+        return "w-16 h-16 rounded-lg overflow-hidden transition-transform group-hover:scale-105";
       case "home":
       default:
-        return "w-16 h-16 rounded-lg overflow-hidden  flex items-center justify-center transition-transform group-hover:scale-105";
+        return "w-16 h-16 rounded-lg overflow-hidden transition-transform group-hover:scale-105";
     }
   };
 
   const getTextStyles = (category: Category) => {
-    const isSelected = selectedCategoryId === category.id;
+    // So sánh với slug hoặc id để hỗ trợ cả 2 cách
+    const isSelected = selectedCategoryId === category.slug || selectedCategoryId === category.id;
 
     switch (variant) {
       case "product-page":
@@ -234,9 +162,7 @@ export function CategoryNav({
         }`;
       case "home":
       default:
-        return `text-xs text-center leading-tight max-w-[80px] truncate ${
-          category.name === "KHUYẾN MÃI SỐC" ? "text-red-600" : "text-foreground"
-        }`;
+        return "text-xs text-center leading-tight max-w-[80px] truncate text-foreground";
     }
   };
 
@@ -246,9 +172,27 @@ export function CategoryNav({
         return "gap-4";
       case "home":
       default:
-        return "gap-0";
+        return "gap-4";
     }
   };
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className={`${getContainerStyles()} relative`}>
+        <div className="w-full overflow-x-hidden">
+          <div className="flex p-1 gap-4">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2 min-w-[80px]">
+                <div className="w-16 h-16 rounded-lg bg-gray-200 animate-pulse" />
+                <div className="w-16 h-3 bg-gray-200 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -273,47 +217,57 @@ export function CategoryNav({
         className="w-full overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
         <div className={`flex p-1 ${getGapStyles()}`}>
-          {categories.map((category, index) => {
-            // Tìm index của category "KHUYẾN MÃI SỐC"
-            const promotionCategoryIndex = categories.findIndex(
-              (cat) => cat.name === "KHUYẾN MÃI SỐC"
-            );
-            const isAfterPromotion = promotionCategoryIndex !== -1 && index === promotionCategoryIndex + 1;
-            
-            return (
-              <div key={category.id} className="flex items-center">
-                {/* Thêm dấu | sau "KHUYẾN MÃI SỐC" */}
-                {isAfterPromotion && (
-                  <div className="text-gray-300 mx-1 text-2xl font-light">|</div>
-                )}
-                <button
-                  onClick={() => handleCategoryClick(category)}
-                  className={getItemStyles(category)}
-                >
-                  <div className={getImageStyles()}>
-                    <div className={getImageContainerStyles()}>
-                      <img
-                        src={category.image || "/placeholder.svg"}
-                        alt={category.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+          {/* Nút KHUYẾN MÃI SỐC riêng */}
+          <div className="flex items-center">
+            <button
+              onClick={handlePromotionClick}
+              className="flex flex-col items-center gap-2 min-w-[80px] group"
+            >
+              <div className="relative">
+                <div className="w-16 h-16 rounded-lg overflow-hidden transition-transform group-hover:scale-105 bg-gray-100">
+                  <img
+                    src="https://cdnv2.tgdd.vn/bhx-static/bhx/menuheader/flash-sale_202509181309465062.gif"
+                    alt="KHUYẾN MÃI SỐC"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+              <span className="text-xs text-center leading-tight max-w-[80px] truncate text-red-600">
+                KHUYẾN MÃI SỐC
+              </span>
+            </button>
+          </div>
 
-                    {/* Badge - chỉ hiển thị ở variant home */}
-                    {variant === "home" && category.badge && (
-                      <div
-                        className={`absolute -top-1 -right-1 ${category.badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap`}
-                      >
-                        {category.badge}
-                      </div>
-                    )}
+          {/* Các category khác */}
+          {categories.map((category) => (
+            <div key={category.id} className="flex items-center">
+              <button
+                onClick={() => handleCategoryClick(category)}
+                className={getItemStyles(category)}
+              >
+                <div className={getImageStyles()}>
+                  <div className={`${getImageContainerStyles()} bg-gray-100`}>
+                    <img
+                      src={getCategoryImage(category)}
+                      alt={category.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
 
-                  <span className={getTextStyles(category)}>{category.name}</span>
-                </button>
-              </div>
-            );
-          })}
+                  {/* Badge - chỉ hiển thị ở variant home */}
+                  {variant === "home" && category.badge && (
+                    <div
+                      className={`absolute -top-1 -right-1 ${category.badgeColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap`}
+                    >
+                      {category.badge}
+                    </div>
+                  )}
+                </div>
+
+                <span className={getTextStyles(category)}>{category.name}</span>
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
