@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2, PackageSearch, ChevronDown } from "lucide-react";
-import { productService, categoryService, brandService } from "@/api";
+import { Loader2, PackageSearch } from "lucide-react";
+import { productService } from "@/api";
 import type { Product } from "@/types/product.type";
 import type { Category } from "@/types/category.type";
 import type { Brand } from "@/types/brand.type";
@@ -10,23 +10,15 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartContext";
 import { getProductId, getProductImage } from "@/lib/constants";
 import { mapProductsFromApi } from "@/lib/utils/productMapper";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = (searchParams.get("q") || "").trim();
   const categoryParam = searchParams.get("category") || "";
   const brandParam = searchParams.get("brand") || "";
+  const selectedCategories = categoryParam ? categoryParam.split(' ').filter(Boolean) : [];
+  const selectedBrands = brandParam ? brandParam.split(' ').filter(Boolean) : [];
   const sortParam = searchParams.get("sort") || "";
   
   const [products, setProducts] = useState<Product[]>([]);
@@ -36,73 +28,11 @@ export default function SearchPage() {
   const [skip, setSkip] = useState(0);
   const [lastBatchSize, setLastBatchSize] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [categories, setCategories] = useState<(Category & { subCategories?: Category[]; children?: Category[] })[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [loadingFilters, setLoadingFilters] = useState(true);
   const { addToCart } = useCart();
 
   const debouncedQuery = useMemo(() => queryParam, [queryParam]);
-
-  // Get selected category name for display
-  const getSelectedCategoryName = () => {
-    if (!categoryParam) return "Tất cả danh mục";
-    // Find category in nested structure
-    for (const cat of categories) {
-      if (cat.slug === categoryParam) {
-        return cat.name;
-      }
-      const subCats = cat.subCategories || cat.children || [];
-      for (const subCat of subCats) {
-        if (subCat.slug === categoryParam) {
-          return subCat.name;
-        }
-      }
-    }
-    return "Tất cả danh mục";
-  };
-
-  // Load categories and brands
-  useEffect(() => {
-    const loadFilters = async () => {
-      try {
-        setLoadingFilters(true);
-        const [categoriesData, brandsData] = await Promise.all([
-          categoryService.getAllCategories(),
-          brandService.getAllBrands(),
-        ]);
-        
-        console.log("Categories data from API:", categoriesData);
-        
-        // Keep nested structure for hierarchical dropdown
-        // Chỉ lấy parent categories (cấp 1) - backend đã filter parent_id: null
-        const activeCategories = categoriesData.filter((cat) => {
-          const isActive = cat.is_active !== undefined ? cat.is_active : true;
-          const isDeleted = cat.is_deleted !== undefined ? cat.is_deleted : false;
-          // Đảm bảo chỉ lấy parent categories (không có parent_id hoặc parent_id là null)
-          const isParent = !cat.parent_id || cat.parent_id === null;
-          return isActive && !isDeleted && isParent;
-        });
-        
-        console.log("Active parent categories (cấp 1):", activeCategories);
-        
-        // Filter active brands
-        const activeBrands = brandsData.filter(
-          (b) => (b.is_active !== undefined ? b.is_active : true) && !(b.is_deleted !== undefined ? b.is_deleted : false)
-        );
-        
-        setCategories(activeCategories);
-        setBrands(activeBrands);
-      } catch (error) {
-        console.error("Error loading filters:", error);
-        // Set empty arrays on error to prevent undefined issues
-        setCategories([]);
-        setBrands([]);
-      } finally {
-        setLoadingFilters(false);
-      }
-    };
-    loadFilters();
-  }, []);
 
   useEffect(() => {
     setProducts([]);
@@ -136,7 +66,11 @@ export default function SearchPage() {
 
         const rawProducts = response?.products ?? [];
         const mappedProducts = mapProductsFromApi(rawProducts);
+        const categoryProducts = response?.categories ?? [];
+        const brandProducts = response?.brands ?? []
 
+        setBrands(brandProducts);
+        setCategories(categoryProducts);
         setProducts((prev) => (skip === 0 ? mappedProducts : [...prev, ...mappedProducts]));
         setLastBatchSize(rawProducts.length);
         setHasMore(rawProducts.length > 0 && rawProducts.length === (response.actualLimit ?? rawProducts.length));
@@ -196,6 +130,44 @@ export default function SearchPage() {
     });
   };
 
+  const toggleCategory = (slug: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    const currentCategories = selectedCategories.slice();
+    
+    if (currentCategories.includes(slug)) {
+      const filtered = currentCategories.filter(s => s !== slug);
+      if (filtered.length === 0) {
+        newParams.delete("category");
+      } else {
+        newParams.set("category", filtered.join(' '));
+      }
+    } else {
+      currentCategories.push(slug);
+      newParams.set("category", currentCategories.join(' '));
+    }
+    
+    setSearchParams(newParams);
+  };
+
+  const toggleBrand = (slug: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    const currentBrands = selectedBrands.slice();
+    
+    if (currentBrands.includes(slug)) {
+      const filtered = currentBrands.filter(s => s !== slug);
+      if (filtered.length === 0) {
+        newParams.delete("brand");
+      } else {
+        newParams.set("brand", filtered.join(' '));
+      }
+    } else {
+      currentBrands.push(slug);
+      newParams.set("brand", currentBrands.join(' '));
+    }
+    
+    setSearchParams(newParams);
+  };
+
   const handleFilterChange = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
     if (value) {
@@ -235,113 +207,171 @@ export default function SearchPage() {
         {/* Filters */}
         {queryParam && (
           <div className="mb-4">
-            <div className="bg-white shadow-sm border-t border-b border-gray-200 p-4 w-full">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Danh mục
+            <div className="bg-white shadow-sm border-t border-b border-gray-200 py-4 w-full space-y-4">
+              {/* Categories Section */}
+              {categories.length > 0 && (
+                <div className="px-4">
+                  <label className="block text-md font-medium text-gray-700 mb-3">
+                    Lọc theo ngành hàng:
                   </label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      disabled={loadingFilters}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between"
+                  <div className="relative group">
+                    {/* Left Arrow */}
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('category-scroll');
+                        if (container) container.scrollLeft -= 200;
+                      }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Scroll left"
                     >
-                      <span className="truncate">
-                        {loadingFilters ? "Đang tải..." : getSelectedCategoryName()}
-                      </span>
-                      <ChevronDown className="h-4 w-4 opacity-50 ml-2 flex-shrink-0" />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-h-[300px] overflow-y-auto">
-                      <DropdownMenuItem
-                        onClick={() => handleFilterChange("category", "")}
-                        className={!categoryParam ? "bg-green-50 text-green-700" : ""}
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    {/* Categories Container */}
+                    <div
+                      id="category-scroll"
+                      className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      {categories.map((cat) => {
+                        const isSelected = selectedCategories.includes(cat.slug || "");
+                        return (
+                          <button
+                            key={cat._id || cat.id}
+                            onClick={() => toggleCategory(cat.slug || "")}
+                            className={`
+                              flex-shrink-0 w-32 p-3 rounded-lg border-2 transition-all
+                              flex flex-col items-center gap-2 text-center
+                              ${isSelected 
+                                ? "bg-green-50 border-green-500 shadow-md" 
+                                : "bg-white border-gray-200 hover:border-green-300 hover:shadow-sm"
+                              }
+                            `}
+                          >
+                            {cat.image && (
+                              <div className="w-16 h-16 flex items-center justify-center">
+                                <img 
+                                  src={cat.image} 
+                                  alt={cat.name}
+                                  className="max-w-full max-h-full object-contain"
+                                />
+                              </div>
+                            )}
+                            <span className={`text-xs font-medium ${isSelected ? "text-green-700" : "text-gray-700"}`}>
+                              {cat.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Right Arrow */}
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('category-scroll');
+                        if (container) container.scrollLeft += 200;
+                      }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Scroll right"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Brands Section with Sort Dropdown */}
+              <div className="px-4">
+                  <div className="flex items-center gap-3">
+                    {/* Sort Dropdown */}
+                    <div className="flex-shrink-0">
+                      <select
+                        value={sortParam}
+                        onChange={(e) => handleFilterChange("sort", e.target.value)}
+                        className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       >
-                        Tất cả danh mục
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {categories.length > 0 ? (
-                        categories.map((cat) => {
-                          const subCats = cat.subCategories || cat.children || [];
-                          const hasSubCategories = subCats.length > 0;
-                          
-                          // Chỉ hiển thị parent categories (cấp 1) trong menu chính
-                          // Nếu có subcategories, hiển thị với SubMenu
-                          // Nếu không có subcategories, hiển thị như item thường
-                          if (hasSubCategories) {
-                            return (
-                              <DropdownMenuSub key={cat._id || cat.id}>
-                                <DropdownMenuSubTrigger>
-                                  {cat.name}
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent>
-                                  {subCats.map((subCat) => (
-                                    <DropdownMenuItem
-                                      key={subCat._id || subCat.id}
-                                      onClick={() => handleFilterChange("category", subCat.slug || "")}
-                                      className={categoryParam === subCat.slug ? "bg-green-50 text-green-700" : ""}
-                                    >
-                                      {subCat.name}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-                            );
-                          } else {
-                            // Parent category không có subcategories
-                            return (
-                              <DropdownMenuItem
-                                key={cat._id || cat.id}
-                                onClick={() => handleFilterChange("category", cat.slug || "")}
-                                className={categoryParam === cat.slug ? "bg-green-50 text-green-700" : ""}
-                              >
-                                {cat.name}
-                              </DropdownMenuItem>
-                            );
-                          }
-                        })
-                      ) : (
-                        <DropdownMenuItem disabled>Không có danh mục</DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Thương hiệu
-                  </label>
-                  <select
-                    value={brandParam}
-                    onChange={(e) => handleFilterChange("brand", e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    disabled={loadingFilters}
-                  >
-                    <option value="">Tất cả thương hiệu</option>
-                    {brands.length > 0 ? (
-                      brands.map((brand) => (
-                        <option key={brand._id || brand.id} value={brand.slug || ""}>
-                          {brand.name || "Unnamed Brand"}
-                        </option>
-                      ))
-                    ) : (
-                      <option disabled>Đang tải thương hiệu...</option>
+                        <option value="">Sắp xếp theo</option>
+                        <option value="price-asc">Giá tăng dần</option>
+                        <option value="price-desc">Giá giảm dần</option>
+                        <option value="hot">Khuyến mãi</option>
+                        <option value="new">Mới nhất</option>
+                      </select>
+                    </div>
+                    {/* Brands Container with Arrows */}
+
+                  {brands.length > 0 && (
+                    <div className="flex-1 relative group">
+                      {/* Left Arrow */}
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById('brand-scroll');
+                          if (container) container.scrollLeft -= 200;
+                        }}
+                        className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Scroll left"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Brands */}
+                      <div
+                        id="brand-scroll"
+                        className="flex gap-2 overflow-x-auto scrollbar-hide scroll-smooth"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                      >
+                        {brands.map((brand) => {
+                          const isSelected = selectedBrands.includes(brand.slug || "");
+                          return (
+                            <button
+                              key={brand._id || brand.id}
+                              onClick={() => toggleBrand(brand.slug || "")}
+                              className={`
+                                flex-shrink-0 h-14 w-20 rounded-lg transition-all
+                                border-2 flex items-center justify-center
+                                ${isSelected 
+                                  ? "bg-green-500 border-green-600 shadow-lg scale-105" 
+                                  : "bg-white border-gray-200 hover:border-green-300 hover:shadow-md"
+                                }
+                              `}
+                            >
+                              {brand.image ? (
+                                <img 
+                                  src={brand.image} 
+                                  alt={brand.name}
+                                  className="max-w-full max-h-full object-contain rounded-sm"
+                                />
+                              ) : (
+                                <span className={`text-xs font-medium ${isSelected ? "text-white" : "text-gray-700"}`}>
+                                  {brand.name}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right Arrow */}
+                      <button
+                        onClick={() => {
+                          const container = document.getElementById('brand-scroll');
+                          if (container) container.scrollLeft += 200;
+                        }}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-md rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Scroll right"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  
                     )}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Sắp xếp
-                  </label>
-                  <select
-                    value={sortParam}
-                    onChange={(e) => handleFilterChange("sort", e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="">Mặc định</option>
-                    <option value="price-asc">Giá tăng dần</option>
-                    <option value="price-desc">Giá giảm dần</option>
-                    <option value="hot">Khuyến mãi nhiều</option>
-                    <option value="new">Mới nhất</option>
-                  </select>
                 </div>
               </div>
             </div>

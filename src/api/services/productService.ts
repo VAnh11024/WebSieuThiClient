@@ -1,5 +1,5 @@
 import api from "../axiosConfig";
-import type { Product } from "../../types";
+import type { Category, Product, Brand } from "../../types";
 
 export interface SearchProductsParams {
   skip?: number;
@@ -13,6 +13,8 @@ export interface SearchProductsResponse {
   skip: number;
   actualLimit: number;
   products: Product[];
+  categories: Category[];
+  brands: Brand[];
 }
 
 /**
@@ -150,6 +152,8 @@ class ProductService {
         skip: params?.skip ?? 0,
         actualLimit: 0,
         products: [],
+        categories: [],
+        brands: []
       };
     }
 
@@ -158,6 +162,8 @@ class ProductService {
       skip: number;
       actualLimit: number;
       products: Product[];
+      categories: Category[];
+      brands: Brand[]
     }>(`${this.basePath}/search`, {
       params: {
         key,
